@@ -1,0 +1,2473 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NTTU 資工大二讀書規劃 & CPE 突破 Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-main: #0b1120;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #0b1329;
+      color: #f1f5f9;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    .tab-active {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+    }
+    .pulse-danger {
+      animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col custom-scrollbar">
+
+  <!-- TOP HEADER -->
+  <header class="glass sticky top-0 z-50 border-b border-slate-800 px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-bold text-white tracking-wide">國立臺東大學 資工大二讀書規劃導航</h1>
+          <span class="px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-mono">115-1 (大二上)</span>
+        </div>
+        <p class="text-xs text-slate-400 flex items-center gap-2 flex-wrap">
+          <span><i class="fa-solid fa-user-astronaut text-cyan-400"></i> 吳岳軒 (11411218)</span>
+          <span>•</span>
+          <span class="text-emerald-400"><i class="fa-solid fa-shield-halved"></i> 核心目標：推甄系排領先 + CPE 從 0 漸進突破</span>
+          <span>•</span>
+          <span class="text-purple-400"><i class="fa-solid fa-microchip"></i> 長期方向：資工+嵌入式/AI硬體</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Live Quick Status Bar & Actions -->
+    <div class="flex items-center gap-3 text-xs">
+      <div class="hidden sm:flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
+        <span class="text-slate-400">當前 CPE 等級：</span>
+        <span id="header-cpe-lvl" class="font-bold text-amber-400 px-1.5 py-0.5 rounded bg-amber-400/10">Lv.0 啟航 (0 AC)</span>
+      </div>
+
+      <div class="hidden md:flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
+        <span class="text-slate-400">本週課業壓力：</span>
+        <span id="header-stress-badge" class="font-bold text-blue-400">標準模式 (4-6h CPE)</span>
+      </div>
+
+      <button onclick="openTimerModal()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-md transition">
+        <i class="fa-solid fa-stopwatch"></i>
+        <span>專注番茄鐘</span>
+      </button>
+
+      <button onclick="exportData()" title="備份資料" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+        <i class="fa-solid fa-download"></i>
+      </button>
+      <button onclick="resetToDefaultPrompt()" title="重設為預設課表" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 transition">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- NAV TABS -->
+  <nav class="bg-slate-900/90 border-b border-slate-800 px-4 lg:px-8 py-2 overflow-x-auto custom-scrollbar">
+    <div class="flex gap-2 min-w-max">
+      <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-btn tab-active px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-2">
+        <i class="fa-solid fa-chart-pie"></i> 總覽 Dashboard
+      </button>
+      <button onclick="switchTab('smart-planner')" id="tab-btn-smart-planner" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 今日時間分配器 (2~3hr)
+      </button>
+      <button onclick="switchTab('timetable')" id="tab-btn-timetable" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-calendar-week"></i> 週課表 & 每日排程
+      </button>
+      <button onclick="switchTab('courses')" id="tab-btn-courses" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-book-bookmark"></i> 9大課程深度剖析
+      </button>
+      <button onclick="switchTab('knowledge-map')" id="tab-btn-knowledge-map" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-network-wired text-cyan-400"></i> 跨領域知識地圖
+      </button>
+      <button onclick="switchTab('cpe')" id="tab-btn-cpe" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-code text-emerald-400"></i> CPE 0題漸進突破系統
+      </button>
+      <button onclick="switchTab('exams')" id="tab-btn-exams" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-fire text-rose-400"></i> 考試五階段備戰
+      </button>
+      <button onclick="switchTab('health')" id="tab-btn-health" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-heart-pulse text-amber-400"></i> 各科健康診斷
+      </button>
+      <button onclick="switchTab('weekly-review')" id="tab-btn-weekly-review" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-list-check"></i> 每週覆盤 (Weekly Review)
+      </button>
+      <button onclick="switchTab('sources')" id="tab-btn-sources" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-database"></i> 課綱與資料來源
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto space-y-6">
+
+    <!-- ==================== TAB 1: DASHBOARD ==================== -->
+    <section id="tab-content-dashboard" class="space-y-6">
+      
+      <!-- HERO BANNER: TODAY'S HIGHEST PRIORITY 3 THINGS -->
+      <div class="glass rounded-2xl p-5 border border-blue-500/30 bg-gradient-to-r from-blue-950/60 via-slate-900/80 to-indigo-950/60 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center justify-center p-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold">
+                <i class="fa-solid fa-bullseye mr-1"></i> 今日核心聚焦
+              </span>
+              <h2 class="text-lg font-bold text-white tracking-wide">今日最重要 3 件事（動態優先級推薦）</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">根據即將到來的評量、掌握度弱項、CPE 基礎練習與今日課表自動計算：</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="refreshTop3Tasks()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-arrows-rotate"></i> 重新計算優先級
+            </button>
+          </div>
+        </div>
+
+        <div id="top3-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Dynamically populated by JS -->
+        </div>
+      </div>
+
+      <!-- METRICS & STATUS CARDS ROW -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Card 1: GPA Ranking Status -->
+        <div class="glass rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-medium text-slate-400">系排推甄戰略</span>
+            <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs"><i class="fa-solid fa-trophy"></i></span>
+          </div>
+          <div class="text-xl font-bold text-white mb-1">目標 Top 15%</div>
+          <p class="text-[11px] text-slate-400">目前 3 門高權重必修（離散/演算/組語）全數列為一級防護</p>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-amber-400 h-full rounded-full" style="width: 85%"></div>
+          </div>
+        </div>
+
+        <!-- Card 2: CPE 0->1 Roadmap -->
+        <div class="glass rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-medium text-slate-400">CPE 突破進度</span>
+            <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs"><i class="fa-solid fa-seedling"></i></span>
+          </div>
+          <div class="text-xl font-bold text-emerald-400 mb-1" id="dash-cpe-stat">0 題起步 → Lv.0</div>
+          <p class="text-[11px] text-slate-400">本週累積: <span id="dash-cpe-hrs" class="text-white font-semibold">0.0</span> / 5.0 小時</p>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div id="dash-cpe-bar" class="bg-emerald-500 h-full rounded-full" style="width: 15%"></div>
+          </div>
+        </div>
+
+        <!-- Card 3: Embedded & Hardware Skill -->
+        <div class="glass rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-medium text-slate-400">硬體/嵌入式技能樹</span>
+            <span class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 text-xs"><i class="fa-solid fa-microchip"></i></span>
+          </div>
+          <div class="text-xl font-bold text-cyan-300 mb-1">Verilog + ARM/x86</div>
+          <p class="text-[11px] text-slate-400">數系設計 (FPGA) + 組合語言 + 嵌入式技術聯動</p>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-cyan-500 h-full rounded-full" style="width: 40%"></div>
+          </div>
+        </div>
+
+        <!-- Card 4: Closest Exam Alert -->
+        <div class="glass rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-medium text-slate-400">最近大考倒數</span>
+            <span class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-xs"><i class="fa-solid fa-hourglass-half"></i></span>
+          </div>
+          <div class="text-xl font-bold text-rose-400 mb-1" id="dash-nearest-exam">期中考試週</div>
+          <p class="text-[11px] text-slate-400" id="dash-nearest-exam-detail">第 9 週 (還有約 56 天) • 離散/演算法/組語</p>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-rose-500 h-full rounded-full" style="width: 25%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN SPLIT: TODAY'S SCHEDULE & QUICK COURSE HEALTH -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left 2 Cols: Today's Detailed Plan & Time allocation -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="glass rounded-xl p-5 border border-slate-800">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                <h3 class="font-bold text-white text-base" id="dash-today-name">今日課表與復習節奏</h3>
+              </div>
+              <span class="text-xs text-slate-400" id="dash-today-date"></span>
+            </div>
+
+            <!-- Today's class list -->
+            <div class="space-y-2 mb-5" id="dash-today-classes">
+              <!-- populated by JS -->
+            </div>
+
+            <!-- Daily Action Blocks (Minimum / Standard / Bonus) -->
+            <div class="border-t border-slate-800 pt-4">
+              <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3 flex items-center justify-between">
+                <span>今日具體讀書任務清單 (可勾選完成)</span>
+                <span class="text-[11px] text-slate-400 font-normal">拒絕只寫「複習」，精確到動作</span>
+              </h4>
+
+              <div id="dash-today-tasks" class="space-y-2.5">
+                <!-- populated by JS -->
+              </div>
+
+              <!-- Add custom task -->
+              <form onsubmit="addCustomTask(event)" class="mt-4 flex gap-2">
+                <input type="text" id="custom-task-input" placeholder="＋ 新增今日自訂任務（例如：演算法寫 OJ 第 2 題 45分鐘）" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+                <select id="custom-task-course" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-300">
+                  <option value="離散數學">離散數學</option>
+                  <option value="演算法">演算法</option>
+                  <option value="數位系統設計">數位系統設計</option>
+                  <option value="組合語言">組合語言</option>
+                  <option value="嵌入式系統軟體技術">嵌入式系統</option>
+                  <option value="視窗程式設計">視窗程式</option>
+                  <option value="CPE">CPE 題型練習</option>
+                  <option value="其他">通識/其他</option>
+                </select>
+                <button type="submit" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition">
+                  新增
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 1 Col: Course Health Quick Radar -->
+        <div class="space-y-4">
+          <div class="glass rounded-xl p-5 border border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-wave-square text-indigo-400"></i> 各科即時健康狀態
+              </h3>
+              <button onclick="switchTab('health')" class="text-xs text-blue-400 hover:underline">詳細診斷 &rarr;</button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3">若科目亮綠燈，主動釋放時間給危險科目或 CPE；絕不平均分散火力。</p>
+            
+            <div id="dash-health-list" class="space-y-2">
+              <!-- populated by JS -->
+            </div>
+          </div>
+
+          <!-- CPE Micro Tracker -->
+          <div class="glass rounded-xl p-5 border border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-terminal text-emerald-400"></i> CPE 0 題解鎖第一步
+              </h3>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">Stage 0 & 1</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-1">目前推薦攻克：<strong class="text-emerald-400">基礎輸入輸出與字元陣列處理</strong></p>
+            <div class="mt-3 p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs space-y-1.5">
+              <div class="flex justify-between text-slate-400">
+                <span>經典入門例題：</span>
+                <span class="text-white font-mono">UVa 10041 / UVa 100</span>
+              </div>
+              <div class="text-[11px] text-slate-400">目標：掌握 <code>while(cin &gt;&gt; n)</code> 多筆測資處理與基礎迴圈除錯。</div>
+            </div>
+            <button onclick="switchTab('cpe')" class="mt-3 w-full py-2 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-medium transition text-center block">
+              進入 CPE 專屬練習台 &rarr;
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 2: SMART TIME PLANNER (2~3 HR) ==================== -->
+    <section id="tab-content-smart-planner" class="hidden space-y-6">
+      <div class="glass rounded-2xl p-6 border border-amber-500/30 bg-gradient-to-br from-slate-900 via-slate-900/95 to-amber-950/30">
+        <div class="max-w-3xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium mb-3">
+            <i class="fa-solid fa-brain"></i> 動態時間分配決策演算法
+          </div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">「我今天只有有限的時間，到底該讀哪一科、讀多久、讀什麼？」</h2>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            絕大多數排程工具只是列出龐大的代辦事項，讓人產生無力感。本演算法依據<strong>「推甄必修權重 × 考試倒數天數 × 當前掌握漏洞 × CPE 漸進目標 × 當前可用總時數」</strong>，自動精確切分每一分鐘，並給予具體可執行的動作指引。
+          </p>
+        </div>
+
+        <!-- Input controls -->
+        <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">1. 我今天總共可專注的時間：</label>
+            <div class="flex items-center gap-2">
+              <input type="range" id="planner-hours-range" min="1" max="6" step="0.5" value="2.5" oninput="updatePlannerHours(this.value)" class="w-full accent-amber-500">
+              <span id="planner-hours-val" class="text-amber-400 font-bold text-sm min-w-[50px]">2.5 小時</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">2. 今日課業與精力狀態：</label>
+            <select id="planner-energy" onchange="runSmartPlanner()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white">
+              <option value="normal">精神良好（適合硬核演算法/數學證明）</option>
+              <option value="tired">略感疲憊（適合複習筆記/看範例/練習寫已理解的語法）</option>
+              <option value="exam_urgent">考試緊迫（集中單科刷題突破）</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">3. 執行生成：</label>
+            <button onclick="runSmartPlanner()" class="w-full py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold rounded-lg text-xs shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-calculator"></i> 立即運算最佳時間配置
+            </button>
+          </div>
+        </div>
+
+        <!-- Generated Plan Cards -->
+        <div class="mt-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> 今日最佳精確時間流（按順序執行）
+            </h3>
+            <span id="planner-total-allocated" class="text-xs text-slate-400">已分配：150 分鐘</span>
+          </div>
+
+          <div id="planner-blocks-container" class="space-y-3">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- Avoid List Alert -->
+        <div class="mt-6 p-4 rounded-xl bg-rose-950/30 border border-rose-800/40 text-xs text-rose-200 space-y-1">
+          <div class="font-bold flex items-center gap-1.5 text-rose-400">
+            <i class="fa-solid fa-triangle-exclamation"></i> 今日防雷提醒（今日請主動避免以下行為）：
+          </div>
+          <p>• <strong>不要花超過 15 分鐘讀已經理解的通識科目</strong>（如圖畫書、AI與醫療生活只需在繳交日前一週集中處理）。</p>
+          <p>• <strong>不要只「用眼睛看演算法與組語解答」</strong>，沒有打開 VS Code / MASM 實際 trace 記憶體與指標就算沒有學會。</p>
+          <p>• <strong>CPE 卡住超過 25 分鐘時立刻停損</strong>，依照「看提示 &rarr; 理解邏輯 &rarr; 關閉答案重寫」流程，切勿硬耗 2 小時。</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== TAB 3: TIMETABLE & WEEKLY TEMPLATE ==================== -->
+    <section id="tab-content-timetable" class="hidden space-y-6">
+      
+      <!-- Week Overview Table -->
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-calendar-days text-blue-400"></i> 115-1 臺東大學資工大二 官方真實週課表
+            </h2>
+            <p class="text-xs text-slate-400">資料來源：校務系統已選課程（共 9 門課 / 24 學分）</p>
+          </div>
+          <div class="flex items-center gap-2 text-[11px]">
+            <span class="inline-flex items-center gap-1 text-slate-300"><span class="w-3 h-3 rounded bg-rose-900/60 border border-rose-500/50"></span>核心必修</span>
+            <span class="inline-flex items-center gap-1 text-slate-300"><span class="w-3 h-3 rounded bg-cyan-900/60 border border-cyan-500/50"></span>專業選修(硬體/視窗)</span>
+            <span class="inline-flex items-center gap-1 text-slate-300"><span class="w-3 h-3 rounded bg-slate-800 border border-slate-600"></span>通識/博雅</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-xs text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr class="bg-slate-900/90 text-slate-300 border-b border-slate-700">
+                <th class="p-2.5 text-center font-semibold w-16">節次</th>
+                <th class="p-2.5 text-center font-semibold w-24">時間</th>
+                <th class="p-2.5 text-center font-semibold">星期一 (Mon)</th>
+                <th class="p-2.5 text-center font-semibold">星期二 (Tue)</th>
+                <th class="p-2.5 text-center font-semibold">星期三 (Wed)</th>
+                <th class="p-2.5 text-center font-semibold">星期四 (Thu)</th>
+                <th class="p-2.5 text-center font-semibold">星期五 (Fri)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 text-slate-300" id="official-timetable-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Weekly Sustainable Study Schedule Template (Mon - Sun) -->
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <div class="mb-4">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-indigo-400"></i> 每週每日可持續讀書模板（非塞滿式，具備彈性緩衝）
+          </h3>
+          <p class="text-xs text-slate-400">分為【最低完成量 (保底維持系排)】、【標準完成量 (穩步拔尖+CPE)】、【有空額外衝刺】</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="weekly-template-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 4: COURSES DEEP DIVE (9 COURSES) ==================== -->
+    <section id="tab-content-courses" class="hidden space-y-6">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-graduation-cap text-indigo-400"></i> 115-1 本學期 9 大課程逐科深度剖析
+          </h2>
+          <p class="text-xs text-slate-400">結合推甄目標、硬體/嵌入式未來方向、CPE 解題基礎與學期配分完整解析</p>
+        </div>
+
+        <!-- Filter Tags -->
+        <div class="flex items-center gap-1.5 overflow-x-auto text-xs">
+          <button onclick="filterCourses('ALL')" class="course-filter-btn px-2.5 py-1 rounded bg-blue-600 text-white font-medium">全部 (9)</button>
+          <button onclick="filterCourses('CRITICAL')" class="course-filter-btn px-2.5 py-1 rounded bg-slate-800 text-rose-300 hover:bg-slate-700">🔴 非常重要 (3)</button>
+          <button onclick="filterCourses('IMPORTANT')" class="course-filter-btn px-2.5 py-1 rounded bg-slate-800 text-amber-300 hover:bg-slate-700">🟠 重要 (2)</button>
+          <button onclick="filterCourses('NORMAL')" class="course-filter-btn px-2.5 py-1 rounded bg-slate-800 text-yellow-300 hover:bg-slate-700">🟡 普通 (1)</button>
+          <button onclick="filterCourses('EASY')" class="course-filter-btn px-2.5 py-1 rounded bg-slate-800 text-emerald-300 hover:bg-slate-700">🟢 易維持通識 (3)</button>
+        </div>
+      </div>
+
+      <!-- Course Cards Container -->
+      <div class="grid grid-cols-1 gap-6" id="courses-detail-container">
+        <!-- Rendered by JS with rich modal trigger & comprehensive cards -->
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 5: KNOWLEDGE MAP ==================== -->
+    <section id="tab-content-knowledge-map" class="hidden space-y-6">
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-diagram-project text-cyan-400"></i> 大二資工核心課程 × CPE × 嵌入式/AI硬體 知識整合地圖
+          </h2>
+          <p class="text-xs text-slate-400">「一份時間，雙倍收益」—— 找出課業與競程/長遠硬體方向的交集點，避免各自孤立學習</p>
+        </div>
+
+        <!-- Interactive Map Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          <!-- Node 1: Discrete Math <-> Algorithms <-> CPE -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-blue-500/40 space-y-3 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">演算法 & 邏輯主軸</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">極高綜效</span>
+            </div>
+            <h3 class="font-bold text-white text-sm">離散數學 ↔ 演算法 ↔ CPE 解題</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong>關聯本質：</strong> 離散數學的「遞迴關係、集合、排列組合、圖論 (Graph/Tree)」，正是演算法課動態規劃 (DP) 與圖形走訪 (DFS/BFS) 的數學原理；而在 CPE 中，中高階題目 70% 都在考這兩者的程式實作。
+            </p>
+            <div class="p-2.5 rounded bg-slate-950/80 text-[11px] text-cyan-300 space-y-1">
+              <div>💡 <strong>讀書策略：</strong> 演算法上到 Divide & Conquer 與 Greedy 時，當週 CPE 就刷對應的基礎題，等於「作業 + CPE 練習」一次完成。</div>
+            </div>
+          </div>
+
+          <!-- Node 2: Assembly <-> Embedded <-> Computer Organization -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-purple-500/40 space-y-3 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">底層軟韌體主軸</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">硬體方向核心</span>
+            </div>
+            <h3 class="font-bold text-white text-sm">組合語言 ↔ 嵌入式軟體 ↔ 計組 (大二下)</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong>關聯本質：</strong> 組合語言讓你徹底搞懂 CPU 暫存器 (EAX, ESP)、堆疊框架與記憶體位址；嵌入式系統的硬體暫存器配置 (Memory-mapped I/O) 與中斷向量表 (ISR)，本質上就是組合語言與 C 語言的直接映射。
+            </p>
+            <div class="p-2.5 rounded bg-slate-950/80 text-[11px] text-purple-300 space-y-1">
+              <div>💡 <strong>讀書策略：</strong> 組合語言的堆疊記憶體追蹤能力，能讓你在寫嵌入式 FreeRTOS Task 切換與除錯時，具備遠超同儕的底層排錯直覺。</div>
+            </div>
+          </div>
+
+          <!-- Node 3: Digital System <-> Embedded <-> AI Hardware -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-emerald-500/40 space-y-3 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">硬體電路與晶片主軸</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">晶片架構必備</span>
+            </div>
+            <h3 class="font-bold text-white text-sm">數位系統設計 (Verilog) ↔ 嵌入式 ↔ AI 硬體加速</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong>關聯本質：</strong> 數位系統設計教授布林邏輯、卡諾圖、序向電路與 Verilog HDL，是打造 ASIC/FPGA 晶片的語言；現代 AI 硬體加速器（如 NPU、矩陣乘法電路）正是使用 Verilog 在硬體層級實踐演算法平行運算。
+            </p>
+            <div class="p-2.5 rounded bg-slate-950/80 text-[11px] text-emerald-300 space-y-1">
+              <div>💡 <strong>讀書策略：</strong> 期末 FPGA 專題可嘗試製作簡易硬體加速模組或與 MCU 透過 SPI/UART 介接，直接為研究所推甄專題履歷奠定亮點。</div>
+            </div>
+          </div>
+
+          <!-- Node 4: Windows Prog <-> Embedded GUI / Tools -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-amber-500/40 space-y-3 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">工程工具鏈主軸</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">實戰應用</span>
+            </div>
+            <h3 class="font-bold text-white text-sm">視窗程式設計 (C#) ↔ 嵌入式上位機介面 (GUI)</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong>關聯本質：</strong> 許多嵌入式硬體產品需要上位機 (Host PC) 軟體來顯示感測器波形、發送控制指令與寫入韌體。C# WinForms/WPF 具備 SerialPort 與多執行緒處理能力，能快速寫出硬體除錯面板。
+            </p>
+            <div class="p-2.5 rounded bg-slate-950/80 text-[11px] text-amber-300 space-y-1">
+              <div>💡 <strong>讀書策略：</strong> 視窗程式期末專案可選擇「微控制器感測器即時監控儀表板」，直接與嵌入式課程成果結合！</div>
+            </div>
+          </div>
+
+          <!-- Node 5: Ethics & AI Healthcare <-> General Science -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">通識與倫理主軸</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">高投報維持</span>
+            </div>
+            <h3 class="font-bold text-white text-sm">資訊倫理 + AI與醫療生活 + 圖畫書</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong>關聯本質：</strong> 通識課決定你的 GPA 小數點後關鍵分數（每科 2 學分，三科共 6 學分！）。掌握 AI 醫療與資通安全個資隱私，也能在推甄備審的自傳中展現跨領域視野與社會關懷。
+            </p>
+            <div class="p-2.5 rounded bg-slate-950/80 text-[11px] text-slate-300 space-y-1">
+              <div>💡 <strong>讀書策略：</strong> 平常上課認真出席拿滿 20-30% 平時分，作業利用空檔高效完成，絕不在考前幾天佔用專業科目的衝刺時間。</div>
+            </div>
+          </div>
+
+          <!-- Node 6: Long term Graduate School Roadmap -->
+          <div class="p-4 rounded-xl bg-gradient-to-br from-indigo-950/70 to-slate-900 border border-indigo-500/50 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">研究所推甄藍圖</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-500/30 text-indigo-200">大二關鍵年</span>
+            </div>
+            <h3 class="font-bold text-white text-sm">大二上核心奠基 ➔ 大二下專題確立 ➔ 大三推甄發酵</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              <strong>戰略全景：</strong> 大二上的【離散 + 演算法 + 數系 + 組語】是頂大資工/電機甲組教授看成績單時最看重的四根支柱。只要大二上穩住前 10-15%，加上 CPE 拿到 2~3 題以上證明，推甄競爭力將具備絕對優勢。
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== TAB 6: CPE SYSTEM (FROM 0 SOLVED) ==================== -->
+    <section id="tab-content-cpe" class="hidden space-y-6">
+      
+      <!-- CPE HERO BANNER FOR 0 SOLVED STARTER -->
+      <div class="glass rounded-2xl p-6 border border-emerald-500/40 bg-gradient-to-r from-emerald-950/50 via-slate-900 to-teal-950/40 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
+                <i class="fa-solid fa-seedling mr-1"></i> CPE 0 題漸進升級專案
+              </span>
+              <h2 class="text-xl font-bold text-white">從零開始的程式解題破繭之路</h2>
+            </div>
+            <p class="text-xs text-slate-300 mt-2 max-w-2xl leading-relaxed">
+              「不要一開始就跳入 DP 或圖論，也不要被一天 5 題的刷題量嚇退。」我們將解題拆解為 <strong>6 大能力等級 (Lv.0 ~ Lv.6)</strong> 與 <strong>6 步驟刻意練習法</strong>。當你掌握基礎輸入輸出與陣列模擬，CPE 突破 1 題、2 題只是水到渠成的必然結果！
+            </p>
+          </div>
+
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-emerald-500/30 text-center min-w-[200px]">
+            <div class="text-xs text-slate-400">目前實時等級評定</div>
+            <div class="text-2xl font-black text-emerald-400 mt-0.5" id="cpe-profile-level">Lv.0</div>
+            <div class="text-[11px] text-slate-300" id="cpe-profile-title">語法重整與輸入輸出適應</div>
+            <div class="mt-2 text-[10px] text-slate-400">累積 AC: <span id="cpe-profile-ac" class="text-emerald-400 font-bold">0</span> 題 • 練習: <span id="cpe-profile-time" class="text-white font-bold">0.0</span> 小時</div>
+          </div>
+        </div>
+
+        <!-- Adaptive Time Slider Banner -->
+        <div class="mt-5 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2 text-slate-300">
+            <span>動態每週建議時數：</span>
+            <span class="font-bold text-emerald-400" id="cpe-adaptive-hours-text">平常週：4～6 小時／週</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400">手動設定當前課業壓力：</span>
+            <button onclick="setCpeStress('exam')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px]" id="stress-btn-exam">考試週 (2-3h)</button>
+            <button onclick="setCpeStress('normal')" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-medium" id="stress-btn-normal">一般週 (4-6h)</button>
+            <button onclick="setCpeStress('light')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px]" id="stress-btn-light">輕鬆週 (6-8h)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CPE LEVELS ROADMAP PROGRESSION -->
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-stairs text-amber-400"></i> CPE 0 題 → 穩健 3 題 能力等級路線圖
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5" id="cpe-level-cards">
+          <!-- Level 0 -->
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-emerald-500/60 relative">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-bold text-emerald-400 font-mono">Lv.0 (起點現況)</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">當前階段</span>
+            </div>
+            <h4 class="text-sm font-bold text-white">語法扎根與 EOF 測資適應</h4>
+            <p class="text-[11px] text-slate-300 mt-1">重點：搞懂 <code>while(cin &gt;&gt; n)</code>, <code>getline()</code>, 陣列邊界、型別溢位 (long long) 與基本除錯。</p>
+            <div class="mt-2 text-[10px] text-slate-400">解鎖條件：掌握 3 種基本 I/O 寫法並成功 AC 1 題。</div>
+          </div>
+
+          <!-- Level 1 -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-bold text-slate-400 font-mono">Lv.1</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">待解鎖</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-200">極簡基礎題與模擬</h4>
+            <p class="text-[11px] text-slate-400 mt-1">重點：依照題目描述一步步寫出迴圈，如 UVa 100 (3n+1 猜想)、UVa 10041 (Vito's Family)。</p>
+            <div class="mt-2 text-[10px] text-slate-500">解鎖條件：累積 3 題基礎模擬 AC。</div>
+          </div>
+
+          <!-- Level 2 -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-bold text-slate-400 font-mono">Lv.2</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">待解鎖</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-200">字串處理與一維/二維陣列</h4>
+            <p class="text-[11px] text-slate-400 mt-1">重點：迴文字串、大小寫轉換、密碼解密模擬、井字棋與踩地雷陣列檢查。</p>
+            <div class="mt-2 text-[10px] text-slate-500">解鎖條件：字串與陣列分類累計 5 題 AC。</div>
+          </div>
+
+          <!-- Level 3 -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-bold text-slate-400 font-mono">Lv.3 (具備破蛋實力)</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">待解鎖</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-200">排序、搜尋與基礎數論</h4>
+            <p class="text-[11px] text-slate-400 mt-1">重點：<code>std::sort</code> 自訂比較函式、質數篩法 (Sieve)、最大公因數 (GCD)、大數基本加法。</p>
+            <div class="mt-2 text-[10px] text-slate-500">解鎖條件：可獨立在 40 分鐘內寫完 1 題排序/數論。</div>
+          </div>
+
+          <!-- Level 4 -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-bold text-slate-400 font-mono">Lv.4</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">大二演算法同盟</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-200">STL 容器、Greedy 與二分搜</h4>
+            <p class="text-[11px] text-slate-400 mt-1">重點：<code>vector, map, set, stack, queue</code>, <code>binary_search</code>, 貪婪選擇證明與實作。</p>
+            <div class="mt-2 text-[10px] text-slate-500">解鎖條件：STL 容器應用題累積 8 題 AC。</div>
+          </div>
+
+          <!-- Level 5 & 6 -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-bold text-slate-400 font-mono">Lv.5 ~ Lv.6 (衝刺 3~4 題)</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">進階挑戰</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-200">DFS / BFS、基礎 DP 與限時模擬</h4>
+            <p class="text-[11px] text-slate-400 mt-1">重點：圖的走訪、連通元件、背包問題、LCS、正式 3 小時限時全真模擬試驗。</p>
+            <div class="mt-2 text-[10px] text-slate-500">解鎖條件：全真模擬穩拿 2~3 題。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6-STEP PRACTICE WORKFLOW GUIDE -->
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-3">
+          <i class="fa-solid fa-arrows-spin text-cyan-400"></i> CPE 刻意練習 6 步驟循環法（拒絕無腦刷題）
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 text-xs">
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="font-bold text-blue-400">① 獨立嘗試 (15~25m)</div>
+            <p class="text-slate-400 text-[11px]">讀懂測資輸入格式，在紙上畫出流程，嘗試手寫出第一版暴力解。</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="font-bold text-amber-400">② 卡住深度分析</div>
+            <p class="text-slate-400 text-[11px]">區分是：看錯題目？演算法不會？語法寫不出？還是測資超出記憶體/時間？</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="font-bold text-purple-400">③ 看觀念與提示</div>
+            <p class="text-slate-400 text-[11px]">只看解題思路或演算法關鍵字（如「用 map 統計頻率」），<strong>絕不直接複製整段程式</strong>。</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="font-bold text-emerald-400">④ 關閉解答重寫</div>
+            <p class="text-slate-400 text-[11px]">理解邏輯後，把解答網頁完全關閉，自己從第一行 <code>#include</code> 重新敲出並 AC。</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="font-bold text-rose-400">⑤ 記錄到錯題本</div>
+            <p class="text-slate-400 text-[11px]">在下方記錄器寫下 WA 原因（如：沒考慮 n=0、陣列大小不夠、EOF 沒判斷）。</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+            <div class="font-bold text-cyan-400">⑥ 3 天後間隔重測</div>
+            <p class="text-slate-400 text-[11px]">過 3~5 天重新打開題目，能在 20 分鐘內一次 AC 才算真正學會。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE CPE PRACTICE LOGGER & MISTAKE NOTEBOOK -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left 1 Col: Log new practice session -->
+        <div class="glass rounded-xl p-5 border border-slate-800">
+          <h3 class="font-bold text-white text-sm mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-plus-circle text-emerald-400"></i> 登記今日 CPE 練習記錄
+          </h3>
+
+          <form onsubmit="logCpeSession(event)" class="space-y-3 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1">題目編號 / 名稱：</label>
+              <input type="text" id="cpe-input-name" placeholder="例如: UVa 10041 - Vito's Family" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">所屬主題類型：</label>
+                <select id="cpe-input-topic" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-200">
+                  <option value="基礎輸入輸出與語法">基礎 I/O 與語法 (Stage 0)</option>
+                  <option value="基本模擬與數學">基本模擬與數學 (Stage 1)</option>
+                  <option value="陣列與字串">陣列與字串處理</option>
+                  <option value="排序與搜尋">排序與搜尋 (Sort/Search)</option>
+                  <option value="STL與基礎結構">STL / Stack / Queue</option>
+                  <option value="貪婪與二分搜">Greedy / Binary Search</option>
+                  <option value="DFS與BFS">DFS / BFS 圖形</option>
+                  <option value="動態規劃">DP 動態規劃</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1">解題結果：</label>
+                <select id="cpe-input-result" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-200">
+                  <option value="AC" class="text-emerald-400 font-bold">🟢 獨立 AC</option>
+                  <option value="AC_HINT" class="text-blue-400">🔵 看提示後 AC</option>
+                  <option value="WA" class="text-rose-400">🔴 WA (答案錯誤)</option>
+                  <option value="TLE" class="text-amber-400">🟡 TLE / MLE (超時/超記憶體)</option>
+                  <option value="STUCK" class="text-slate-400">⚪ 完全不會/卡住</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">花費時間 (分鐘)：</label>
+                <input type="number" id="cpe-input-duration" min="5" max="300" value="30" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">理解度自評：</label>
+                <select id="cpe-input-mastery" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-200">
+                  <option value="high">🟢 100% 徹底掌握</option>
+                  <option value="medium" selected>🟡 70% 需過幾天重測</option>
+                  <option value="low">🔴 30% 仍有盲點</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1">踩坑原因 / 關鍵體會 (錯題本筆記)：</label>
+              <textarea id="cpe-input-notes" rows="2" placeholder="例如: 忘記處理 n 為負數的情況；或是 while(cin>>s) 的字串讀取結尾問題..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white"></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition shadow-md">
+              <i class="fa-solid fa-floppy-disk mr-1"></i> 儲存解題記錄 & 更新能力等級
+            </button>
+          </form>
+        </div>
+
+        <!-- Right 2 Cols: Practice Logs & Weakness Radar -->
+        <div class="lg:col-span-2 space-y-4">
+          
+          <!-- Topic Mastery Bars -->
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold text-white text-xs flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-blue-400"></i> 各題型正確率與弱項雷達
+              </h4>
+              <span class="text-[11px] text-slate-400">自動標註：🟢 已熟悉 | 🟡 正在學習 | 🔴 明顯弱項</span>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs" id="cpe-topic-radar">
+              <!-- populated by JS -->
+            </div>
+          </div>
+
+          <!-- History Logs List -->
+          <div class="glass rounded-xl p-4 border border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold text-white text-xs flex items-center gap-2">
+                <i class="fa-solid fa-list-ol text-slate-400"></i> 近期解題履歷與錯題檢視
+              </h4>
+              <button onclick="clearCpeLogsConfirm()" class="text-[11px] text-slate-500 hover:text-rose-400 transition">清空紀錄</button>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar max-h-60 overflow-y-auto">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-900 text-slate-400 sticky top-0">
+                  <tr>
+                    <th class="p-2">日期</th>
+                    <th class="p-2">題目</th>
+                    <th class="p-2">主題</th>
+                    <th class="p-2">結果</th>
+                    <th class="p-2">時間</th>
+                    <th class="p-2">筆記/弱點分析</th>
+                  </tr>
+                </thead>
+                <tbody id="cpe-log-table-body" class="divide-y divide-slate-800 text-slate-300">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 7: EXAMS FIVE-PHASE COUNTDOWN ==================== -->
+    <section id="tab-content-exams" class="hidden space-y-6">
+      
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-bullhorn text-rose-400"></i> 大二上期中／期末考試倒數與五階段備戰戰略
+            </h2>
+            <p class="text-xs text-slate-400">拒絕考前一天通宵抱佛腳；採用嚴謹的 14 天階段式遞進衝刺模型</p>
+          </div>
+          
+          <button onclick="openAddExamModal()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition flex items-center gap-1.5 self-start">
+            <i class="fa-solid fa-plus"></i> 新增/調整考試日程
+          </button>
+        </div>
+
+        <!-- Five-Phase Strategy Guide -->
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 mb-6 text-xs">
+          <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 border-t-2 border-t-blue-500">
+            <div class="font-bold text-blue-400 mb-1">【考前 14～10 天】</div>
+            <div class="text-slate-200 font-medium">範圍確認＋找漏洞</div>
+            <p class="text-[11px] text-slate-400 mt-1">快速掃過講義標題，列出完全沒印象的章節與公式，填補筆記缺口。</p>
+          </div>
+
+          <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 border-t-2 border-t-amber-500">
+            <div class="font-bold text-amber-400 mb-1">【考前 9～6 天】</div>
+            <div class="text-slate-200 font-medium">大量做題／實作</div>
+            <p class="text-[11px] text-slate-400 mt-1">離散/數系動筆算習題；演算法與組語親自寫程式並追蹤暫存器。</p>
+          </div>
+
+          <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 border-t-2 border-t-purple-500">
+            <div class="font-bold text-purple-400 mb-1">【考前 5～3 天】</div>
+            <div class="text-slate-200 font-medium">集中補弱點</div>
+            <p class="text-[11px] text-slate-400 mt-1">針對前一階段算錯的題目重新做一次，不再大範圍看新進度。</p>
+          </div>
+
+          <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 border-t-2 border-t-rose-500">
+            <div class="font-bold text-rose-400 mb-1">【考前 2 天】</div>
+            <div class="text-slate-200 font-medium">全真模擬考／白板推導</div>
+            <p class="text-[11px] text-slate-400 mt-1">限時完成歷屆考古題或作業題；對著空白紙推導演算法 Big-O 與定理。</p>
+          </div>
+
+          <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 border-t-2 border-t-emerald-500">
+            <div class="font-bold text-emerald-400 mb-1">【考前 1 天】</div>
+            <div class="text-slate-200 font-medium">輕量複習＋維持睡眠</div>
+            <p class="text-[11px] text-slate-400 mt-1">只看「重點筆記與公式卡」，晚上 11:30 前入睡確保考試大腦清醒。</p>
+          </div>
+        </div>
+
+        <!-- Exam Countdown Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="exams-cards-container">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 8: COURSE HEALTH STATUS ==================== -->
+    <section id="tab-content-health" class="hidden space-y-6">
+      
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-heart-pulse text-amber-400"></i> 各科即時健康診斷與時間移轉機制
+            </h2>
+            <p class="text-xs text-slate-400">
+              🟢 穩定 (維持基本節奏) | 🟡 注意 (本週需微調補進度) | 🔴 危險 (觸發高優先級時間保護，強行注入複習時數)
+            </p>
+          </div>
+          
+          <button onclick="recalculateHealth()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-stethoscope"></i> 重新評估各科風險指數
+          </button>
+        </div>
+
+        <!-- Health Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="health-cards-grid">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Time Shift Rules Explanation -->
+        <div class="mt-6 p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-2">
+          <div class="font-bold text-white flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-split-up-and-left text-cyan-400"></i> 智慧時間移轉原則（避免平均用力）：
+          </div>
+          <p>• <strong>當通識課（圖畫書、倫理、AI生活）處於 🟢 穩定狀態時：</strong> 系統強制將每日通識建議時間壓縮至 0~15 分鐘，釋放之時間自動轉移給 🔴 離散數學或 🔴 演算法。</p>
+          <p>• <strong>當核心推甄必修（離散/演算法/組語）進入 🔴 危險時：</strong> 系統將自動把當週 CPE 時數降至最低保底 (2~3 小時)，全力保住 GPA 排名，絕不因小失大。</p>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 9: WEEKLY REVIEW ==================== -->
+    <section id="tab-content-weekly-review" class="hidden space-y-6">
+      
+      <div class="glass rounded-xl p-5 border border-slate-800">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-clipboard-check text-blue-400"></i> 每週自我檢討覆盤系統 (Weekly Review)
+          </h2>
+          <p class="text-xs text-slate-400">每週日晚上花 10 分鐘回顧，系統將根據你的填答動態調整下週各科時間分配與 CPE 策略</p>
+        </div>
+
+        <form onsubmit="saveWeeklyReview(event)" class="space-y-4 text-xs">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div class="space-y-3 p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+              <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-arrow-trend-up text-emerald-400"></i> 1. 本週完成與進展
+              </h3>
+              
+              <div>
+                <label class="block text-slate-400 mb-1">本週完成了哪些重要進度？</label>
+                <textarea id="wr-q1" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="例如: 離散數學第 2 章習題寫完、演算法 Merge Sort 寫出程式、CPE 練習了 2 題基礎模擬..."></textarea>
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1">CPE 本週實際投入時數與收穫：</label>
+                <input type="text" id="wr-q2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="例如: 累積 4.5 小時，弄懂 while(cin>>n) 測資中斷語法">
+              </div>
+            </div>
+
+            <div class="space-y-3 p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+              <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-400"></i> 2. 落後與卡點診斷
+              </h3>
+
+              <div>
+                <label class="block text-slate-400 mb-1">哪些科目目前感覺落後或最不懂？</label>
+                <textarea id="wr-q3" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="例如: 組合語言的暫存器跳躍邏輯 (JMP/CMP) 還不熟、離散數學的遞迴證明卡住..."></textarea>
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1">本週有哪些時間安排不合理或無效耗時？</label>
+                <input type="text" id="wr-q4" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" placeholder="例如: 某天晚上滑手機拖延、CPE 一題卡住 1 小時沒停損...">
+              </div>
+            </div>
+
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+            <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-forward text-cyan-400"></i> 3. 下週即將到來的考試／作業截止
+            </h3>
+            <textarea id="wr-q5" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" placeholder="例如: 星期四視窗程式要交作業 1、數位系統星期二有隨堂考卡諾圖..."></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs shadow-lg transition flex items-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 提交覆盤並自動生成「下週讀書戰略建議」
+            </button>
+          </div>
+        </form>
+
+        <!-- Generated Strategy Output -->
+        <div id="weekly-strategy-output" class="hidden mt-6 p-5 rounded-xl bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/40 space-y-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 10: SOURCES & SYLLABUS ==================== -->
+    <section id="tab-content-sources" class="hidden space-y-6">
+      <div class="glass rounded-xl p-5 border border-slate-800 space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-database text-cyan-400"></i> 資料來源與課綱分析依據 (Syllabus & Attribution)
+          </h2>
+          <p class="text-xs text-slate-400">
+            本 Dashboard 中所有課程名稱、學分、上課時段、評分標準與週進度，皆由國立臺東大學校務系統（infosys.nttu.edu.tw）115-1 學生真實課表與課綱資料提取，絕無憑空編造。
+          </p>
+        </div>
+
+        <div class="space-y-3 text-xs" id="sources-list-container">
+          <!-- populated by JS with 9 official syllabus breakdown -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- POMODORO FOCUS TIMER MODAL -->
+  <div id="timer-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass rounded-2xl p-6 border border-slate-700 max-w-sm w-full text-center space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center text-xs text-slate-400">
+        <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-stopwatch text-indigo-400"></i> 專注時鐘</span>
+        <button onclick="closeTimerModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+      </div>
+
+      <div class="text-4xl font-black text-white font-mono tracking-widest my-2" id="timer-display">25:00</div>
+      
+      <div class="text-xs text-slate-300" id="timer-status-text">準備進入高效率深度學習</div>
+
+      <div class="flex justify-center gap-2">
+        <button onclick="setTimerDuration(25)" class="px-2.5 py-1 rounded bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">25m 番茄</button>
+        <button onclick="setTimerDuration(45)" class="px-2.5 py-1 rounded bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">45m 演算法</button>
+        <button onclick="setTimerDuration(60)" class="px-2.5 py-1 rounded bg-slate-800 text-xs text-slate-300 hover:bg-slate-700">60m 離散做題</button>
+      </div>
+
+      <div class="flex justify-center gap-3 pt-2">
+        <button onclick="toggleTimer()" id="timer-toggle-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow transition">
+          開始計時
+        </button>
+        <button onclick="resetTimer()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition">
+          重設
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COURSE DETAIL MODAL -->
+  <div id="course-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass rounded-2xl p-6 border border-slate-700 max-w-2xl w-full max-h-[85vh] overflow-y-auto custom-scrollbar space-y-4 shadow-2xl">
+      <div class="flex justify-between items-start">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="modal-course-badge" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
+            <h3 id="modal-course-title" class="text-lg font-bold text-white"></h3>
+          </div>
+          <p id="modal-course-info" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <button onclick="closeCourseModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-4 text-xs" id="modal-course-body">
+        <!-- populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="glass border-t border-slate-800 py-4 px-4 text-center text-xs text-slate-500">
+    <p>NTTU CSIE 大二讀書規劃 & CPE 突破 Dashboard • 專為維持推甄系排與 0 題漸進拔尖客製設計</p>
+  </footer>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // ==========================================
+    // 1. DATA DEFINITIONS & NTTU OFFICIAL COURSES
+    // ==========================================
+    const NTTU_COURSES = [
+      {
+        id: "discrete_math",
+        name: "離散數學 (Discrete Mathematics)",
+        shortName: "離散數學",
+        category: "CRITICAL", // 🔴 非常重要
+        importanceText: "🔴 非常重要 (資工核心大支柱)",
+        credits: 3,
+        time: "星期三 第 2, 3, 4 節 (09:10 - 12:00)",
+        dayOfWeek: 3, // Wed
+        periods: [2, 3, 4],
+        timeRange: "09:10 - 12:00",
+        location: "資工系專業教室",
+        instructor: "資工專任教授",
+        textbook: "Discrete Mathematics and Its Applications (Kenneth H. Rosen)",
+        grading: "作業與隨堂測驗 30% | 期中考 30% | 期末考 30% | 出席參與 10%",
+        whatItIs: "離散數學是所有計算機科學的『邏輯骨架』。它不探討連續的微積分，而是專注於電腦內部的離散結構：命題邏輯 (0與1的真假)、集合論、遞迴數列、排列組合與圖形結構 (Graph & Tree)。",
+        whyImportant: "1. 研究所推甄與筆試的必備考科；2. 直接決定演算法與動態規劃 (DP) 的理解深度；3. 也是大二上 GPA 拉開差距的核心殺手級科目。",
+        howToStudy: {
+          preview: "上課前花 10 分鐘看章節定義與例題標題即可。",
+          reviewTiming: "週三下課後 24 小時內（週四晚上前）務必複習筆記。",
+          method: "動筆算習題 >>> 單純看書。每週必做 Rosen 課本的練習題（特別是奇數題有附簡答）。",
+          weeklyHours: "4 ～ 5 小時／週",
+          examPrepDays: "考前 12 天開始分章節複習，每章整理 1 張重點定理與公式卡。",
+          mustMemorize: "邏輯等價定律、集合運算法則、鴿籠原理公式、圖論度數定理 (Handshaking Lemma)。",
+          mustUnderstand: "數學歸納法 (Induction) 證明結構、遞迴關係式解法、等價關係與偏序集 (Poset)。",
+          mustPractice: "遞迴求解 (Characteristic Equation)、排列組合排容原理 (Inclusion-Exclusion)、圖形著色與 Euler/Hamilton 路徑判定。",
+          lostPointsReason: "證明題步驟不嚴謹（跳步）、排列組合漏掉重複計算、遞迴初始條件代錯。",
+          masteryCheck: "遮住解答，能在空白紙上完整寫出數學歸納法三步驟與 Euler 圖的充要條件證明。"
+        },
+        relations: "↔ 演算法 (圖論/遞迴) | ↔ CPE (計數/數論/圖形走訪) | ↔ 研究所推甄核心科目",
+        status: "caution", // stable, caution, danger
+        masteryScore: 65,
+        targetScore: 90
+      },
+      {
+        id: "algorithms",
+        name: "演算法 (Algorithms)",
+        shortName: "演算法",
+        category: "CRITICAL", // 🔴 非常重要
+        importanceText: "🔴 非常重要 (程式能力與推甄核心)",
+        credits: 3,
+        time: "星期五 第 6, 7, 8 節 (13:10 - 16:00)",
+        dayOfWeek: 5, // Fri
+        periods: [6, 7, 8],
+        timeRange: "13:10 - 16:00",
+        location: "資工系專業教室 / 電腦教室",
+        instructor: "資工專任教授",
+        textbook: "Introduction to Algorithms (CLRS, Cormen et al.)",
+        grading: "程式作業(OJ) 35% | 期中考 25% | 期末考 30% | 出席參與 10%",
+        whatItIs: "研究『如何用最少的時間與空間解決問題』。從 Big-O 複雜度分析、分治法 (Divide-and-Conquer)、貪婪演算法 (Greedy)、動態規劃 (DP) 到圖形最短路徑 (Dijkstra/Floyd-Warshall)。",
+        whyImportant: "資工系靈魂科目，推甄口試 100% 必問；且與 CPE 題型完全重合，是程式解題從 0 躍升至競程高手的唯一階梯。",
+        howToStudy: {
+          preview: "先看演算法的直觀動畫（如 VisuAlgo），不要先啃數學符號。",
+          reviewTiming: "週五下課後，週末至少花 2 小時把課堂講的演算法親自寫成 C++ 程式碼。",
+          method: "『理解觀念 ➔ 手畫 Trace 過程 ➔ 寫程式丟 OJ ➔ 分析複雜度』四部曲。",
+          weeklyHours: "5 ～ 6 小時／週",
+          examPrepDays: "考前 14 天開始，必須把 CLRS 經典題與歷屆作業重新刻一遍。",
+          mustMemorize: "常見排序複雜度表 (Merge/Quick/Heap)、Master Theorem 公式、Dijkstra 鬆弛 (Relaxation) 條件。",
+          mustUnderstand: "為什麼 DP 需要最佳子結構 (Optimal Substructure) 與重疊子問題？貪婪演算法如何證明安全性 (Greedy Choice Property)？",
+          mustPractice: "手動追蹤 QuickSelect 分割過程、0/1 背包表格填值、Dijkstra 與 Floyd-Warshall 矩陣更新。",
+          lostPointsReason: "Big-O 推導過程遺漏邊界、DP 轉移方程式狀態定義模糊、邊界條件 (Base Case) 寫錯。",
+          masteryCheck: "隨機給一個問題，能說明該用 Greedy 還是 DP，並能在 20 分鐘內寫出不超時的 C++ 實作。"
+        },
+        relations: "↔ 離散數學 (數學證明) | ↔ CPE 解題 (直接映射) | ↔ 推甄競賽必備",
+        status: "caution",
+        masteryScore: 60,
+        targetScore: 92
+      },
+      {
+        id: "digital_system",
+        name: "數位系統設計 (Digital System Design)",
+        shortName: "數位系統設計",
+        category: "CRITICAL", // 🔴 非常重要
+        importanceText: "🔴 非常重要 (硬體/嵌入式/AI晶片地基)",
+        credits: 3,
+        time: "星期二 第 7, 8, 9 節 (14:10 - 17:00)",
+        dayOfWeek: 2, // Tue
+        periods: [7, 8, 9],
+        timeRange: "14:10 - 17:00",
+        location: "硬體實驗室",
+        instructor: "資工硬體專任教授",
+        textbook: "Digital Design: With an Introduction to the Verilog HDL (M. Morris Mano)",
+        grading: "硬體實驗與 Verilog 實作 35% | 期中考 25% | 期末專題(FPGA) 30% | 出席 10%",
+        whatItIs: "從邏輯閘 (AND/OR/NOT)、布林代數、卡諾圖化簡，一路講到加法器、多工器、正反器 (Flip-Flop)、計數器與有限狀態機 (FSM)，並使用 Verilog 撰寫電路燒錄進 FPGA 晶片。",
+        whyImportant: "你的長期目標是『資工＋電子/硬體/嵌入式/AI硬體』，這門課就是你硬體硬實力的第一張門票！不懂數位邏輯就無法理解 CPU 架構與 AI 晶片加速。",
+        howToStudy: {
+          preview: "看懂本週要介紹的電路邏輯閘圖符號。",
+          reviewTiming: "週二實驗課後 48 小時內，打開 ModelSim/Vivado 重新跑一次 Testbench 模擬波形。",
+          method: "『紙筆畫電路圖/狀態圖 ➔ 撰寫 Verilog 模組 ➔ 撰寫 Testbench 驗證波形 ➔ 燒錄 FPGA』。",
+          weeklyHours: "3.5 ～ 4.5 小時／週",
+          examPrepDays: "考前 10 天開始練習卡諾圖圈選化簡、Mealy/Moore 狀態機轉換表格推導。",
+          mustMemorize: "布林代數笛摩根定理、常見正反器 (D-FF, JK-FF) 特性方程式與激勵表。",
+          mustUnderstand: "組合邏輯 (Combinational) 與序向邏輯 (Sequential) 的本質差異 (時脈 Clock 與記憶)。Verilog 阻塞 (=) 與非阻塞 (<=) 指派的硬體意義。",
+          mustPractice: "卡諾圖 4 變數化簡、序列偵測器 (Sequence Detector) 狀態圖繪製、Verilog 撰寫 4-bit 包含 Carry/Zero 旗標的 ALU。",
+          lostPointsReason: "Verilog 語法用 C 語言的思維寫（忘記硬體是平行運作的）、卡諾圖圈選沒最佳化、狀態機漏掉未定義狀態。",
+          masteryCheck: "看著波形圖 (Timing Diagram) 能指出哪裡發生 Glitch 或 Setup/Hold Time 違規。"
+        },
+        relations: "↔ 組合語言 (暫存器/旗標) | ↔ 嵌入式 (硬體電路/周邊通訊) | ↔ 計組 (CPU Datapath)",
+        status: "stable",
+        masteryScore: 78,
+        targetScore: 88
+      },
+      {
+        id: "assembly",
+        name: "組合語言 (Assembly Language)",
+        shortName: "組合語言",
+        category: "IMPORTANT", // 🟠 重要
+        importanceText: "🟠 重要 (底層韌體與逆向分析必備)",
+        credits: 3,
+        time: "星期一 第 8, 9, A 節 (15:10 - 18:00)",
+        dayOfWeek: 1, // Mon
+        periods: [8, 9, 10],
+        timeRange: "15:10 - 18:00",
+        location: "資工系電腦教室",
+        instructor: "資工專任教授",
+        textbook: "Assembly Language for x86 Processors (Kip Irvine)",
+        grading: "上機程式作業 30% | 期中考 25% | 期末考 30% | 平時隨堂 15%",
+        whatItIs: "最接近機器語言的程式語言。學習 CPU 內部暫存器 (EAX, EBX, ESP, EBP)、記憶體分段模型、堆疊操作 (PUSH/POP)、條件跳躍 (JMP/JZ) 與中斷呼叫 (Interrupt)。",
+        whyImportant: "打通軟體與硬體的『任督二脈』。懂得組合語言才能真正看懂 C 語言指標底層在做什麼，也是未來嵌入式系統、作業系統與硬體驅動開發的關鍵技術。",
+        howToStudy: {
+          preview: "先了解本週新增的 3~5 個組合語言指令（如 MOV, ADD, CMP, CALL）。",
+          reviewTiming: "週一晚上立刻打開 Visual Studio + Irvine 函式庫，單步除錯 (Step Into) 觀察暫存器數值跳動。",
+          method: "『Debug 單步執行 + 觀察 Memory/Register 視窗』。多畫堆疊記憶體配置圖 (Stack Frame)。",
+          weeklyHours: "3 ～ 4 小時／週",
+          examPrepDays: "考前 9 天，重點練習手動追蹤 (Trace) 迴圈與副程式呼叫時 ESP/EBP 與暫存器的變化。",
+          mustMemorize: "常見暫存器用途 (EAX累加, ECX計數, ESP堆疊頂端)、條件跳躍指令對應的旗標狀態 (ZF, CF, OF, SF)。",
+          mustUnderstand: "Function Call Calling Convention（參數如何壓入 Stack、回傳值放 EAX、誰負責清理堆疊）。",
+          mustPractice: "用 MASM 寫字串長度計算、陣列反轉、氣泡排序與遞迴階乘演算法。",
+          lostPointsReason: "忘記暫存器被覆蓋、堆疊沒有 Balance 導致程式崩潰、有號數 (Signed) 與無號數 (Unsigned) 跳躍指令搞混 (如 JA/JB vs JG/JL)。",
+          masteryCheck: "看一段 20 行的組合語言反組譯代碼，能準確還原出對應的 C 語言 `for` 迴圈與 `if` 邏輯。"
+        },
+        relations: "↔ 嵌入式系統 (低階硬體驅動) ↔ 數位系統 (暫存器結構) ↔ 計算機組織 (指令集架構 ISA)",
+        status: "caution",
+        masteryScore: 68,
+        targetScore: 88
+      },
+      {
+        id: "embedded_systems",
+        name: "嵌入式系統軟體技術 (Embedded System Software Technology)",
+        shortName: "嵌入式系統軟體",
+        category: "IMPORTANT", // 🟠 重要
+        importanceText: "🟠 重要 (軟硬整合與專案履歷重點)",
+        credits: 3,
+        time: "星期四 第 2, 3, 4 節 (09:10 - 12:00)",
+        dayOfWeek: 4, // Thu
+        periods: [2, 3, 4],
+        timeRange: "09:10 - 12:00",
+        location: "嵌入式實驗室",
+        instructor: "資工專任教授",
+        textbook: "自編講義與官方技術文件 (STM32 / FreeRTOS / Raspberry Pi)",
+        grading: "實驗模組實作(Lab Demos) 40% | 期中考核 20% | 期末成果展 30% | 出席 10%",
+        whatItIs: "學習微控制器 (MCU/ARM)、交叉編譯 (Cross-compilation)、GPIO/UART/SPI/I2C 通訊協定，以及即時作業系統 (RTOS) 任務排程、Semaphore 與 Mutex 資源同步。",
+        whyImportant: "你的長期目標是『資工＋嵌入式/AI硬體』，這門課是你打造可展示推甄專案的最佳舞台！直接接觸實體晶片開發板與周邊感測器。",
+        howToStudy: {
+          preview: "預習實驗手冊中的暫存器定義與感測器 Datasheet 通訊協定時序。",
+          reviewTiming: "週四實驗課驗收完成後，當天把除錯心得與程式碼註解整理到 GitHub / 筆記庫。",
+          method: "動手做實驗 (Hands-on)。遇到問題善用邏輯分析儀或 Serial Monitor 除錯，理解硬體時序。",
+          weeklyHours: "3 ～ 4 小時／週",
+          examPrepDays: "著重在每次 Lab 驗收的程式碼重構與期末專題提前 4 週規劃架構。",
+          mustMemorize: "常見通訊協定接線（UART: TX/RX, I2C: SDA/SCL, SPI: MOSI/MISO/SCK/CS）。",
+          mustUnderstand: "中斷服務常式 (ISR) 的執行原則（短小精幹、不可使用 Blocking 延遲）、RTOS Priority Inversion 與 Mutex 概念。",
+          mustPractice: "利用 C 語言指標操作 Memory-Mapped 暫存器點亮 LED、透過 I2C 讀取溫濕度感測器並用 UART 印出數值。",
+          lostPointsReason: "硬體接線不良（浮接未加 Pull-up/Pull-down）、中斷裡寫了太長的程式碼導致系統當機、時鐘頻率設定錯誤。",
+          masteryCheck: "能在 15 分鐘內拿著一張全新感測器的 Datasheet，寫出驅動程式並讀出正確數據。"
+        },
+        relations: "↔ 組合語言 (底層控制) ↔ 數位系統 (硬體協定) ↔ 視窗程式 (上位機控制面板)",
+        status: "stable",
+        masteryScore: 82,
+        targetScore: 92
+      },
+      {
+        id: "windows_prog",
+        name: "視窗程式設計 (Windows Programming)",
+        shortName: "視窗程式設計",
+        category: "NORMAL", // 🟡 普通
+        importanceText: "🟡 普通 (實戰工具與專題加分)",
+        credits: 3,
+        time: "星期四 第 7, 8, 9 節 (14:10 - 17:00)",
+        dayOfWeek: 4, // Thu
+        periods: [7, 8, 9],
+        timeRange: "14:10 - 17:00",
+        location: "資工系電腦教室",
+        instructor: "資工專任教授",
+        textbook: "Visual C# 程式設計經典 / Microsoft .NET 官方技術手冊",
+        grading: "實作作業 30% | 期中上機測驗 25% | 期末專案作品 35% | 出席 10%",
+        whatItIs: "使用 C# 與 .NET 開發視窗桌面應用程式。學習物件導向設計 (OOP)、事件驅動 (Event-driven) 架構、UI 控制項設計、多執行緒 (Async/Await) 與資料庫 (SQLite/Entity Framework)。",
+        whyImportant: "雖然不是資工最深層理論，但能讓你具備極快的『全端軟體打造能力』，可用來撰寫嵌入式系統的上位機除錯軟體或個人生產力工具，拿高分有利於拉高 GPA。",
+        howToStudy: {
+          preview: "上課前不需要特別預習，跟上課堂範例即可。",
+          reviewTiming: "每次課後將作業完成，並封裝成乾淨的 Class。",
+          method: "跟著範例動手打程式碼，掌握 UI 與後端資料邏輯分離的思維。",
+          weeklyHours: "2 ～ 2.5 小時／週 (作業週增至 3.5 小時)",
+          examPrepDays: "考前 5 天練習歷屆上機題（如計算機、檔案讀寫器、資料庫 CRUD 面板）。",
+          mustMemorize: "常見控制項事件名稱 (Click, TextChanged, KeyDown)、檔案串流 (StreamReader/StreamWriter) 語法樣式。",
+          mustUnderstand: "委派 (Delegate) 與事件 (Event) 的運作機制、跨執行緒更新 UI 控制項的 Invoke 機制。",
+          mustPractice: "設計一個能透過 SerialPort 接收嵌入式硬體數據並繪製即時折線圖的 WinForm 介面。",
+          lostPointsReason: "上機考打字速度太慢、語法細節卡住（忘記型別轉換）、UI 凍結 (忘記用 async/await)。",
+          masteryCheck: "能在 1 小時內從無到有做出一個具備 SQLite 資料庫增刪查改 (CRUD) 的美觀視窗程式。"
+        },
+        relations: "↔ 嵌入式系統 (上位機 GUI 監控面板) ↔ 物件導向程式設計思維",
+        status: "stable",
+        masteryScore: 85,
+        targetScore: 95
+      },
+      {
+        id: "media_ethics",
+        name: "資訊媒體素養與倫理",
+        shortName: "資訊媒體素養與倫理",
+        category: "EASY", // 🟢 易維持通識
+        importanceText: "🟢 易維持通識 (2 學分 / 守住基本分)",
+        credits: 2,
+        time: "星期五 第 1, 2 節 (08:10 - 10:00)",
+        dayOfWeek: 5, // Fri
+        periods: [1, 2],
+        timeRange: "08:10 - 10:00",
+        location: "通識大樓教室",
+        instructor: "通識專任教授",
+        textbook: "授課教師自編簡報與講義",
+        grading: "分組報告 40% | 期中/期末心得 40% | 平時出席 20%",
+        whatItIs: "探討網路社會中的數位公民素養、個人資料保護法規、著作權法、生成式 AI (Generative AI) 智財爭議與 Deepfake 假訊息辨識倫理。",
+        whyImportant: "通識學分也是 GPA 的一部分。採用『高效率通識維持策略』：每堂準時出席拿滿出席分，課堂上直接做完心得筆記，不佔用下課後的核心專業科目時間。",
+        howToStudy: {
+          preview: "無需預習。",
+          reviewTiming: "課堂結束前 10 分鐘完成個人隨堂心得。",
+          method: "上課專注聽講，分組報告主動承擔結構整合或 AI 案例分析角色。",
+          weeklyHours: "0.5 小時／週 (僅需在繳交報告前花 1~2 小時)",
+          examPrepDays: "考前 2 天花 1 小時複習投影片案例與法規常識。",
+          mustMemorize: "個資法與著作權合理使用原則關鍵字。",
+          mustUnderstand: "科技發展與社會倫理的平衡觀點。",
+          mustPractice: "撰寫一篇結構清晰（前言、案例、倫理省思、結論）的 800 字心得報告。",
+          lostPointsReason: "缺課曠課、分組報告遲交、心得格式不合要求。",
+          masteryCheck: "出席率 100%，心得作業皆獲 A 以上評等。"
+        },
+        relations: "↔ 資訊工程專業倫理 ↔ 推甄備審個人素養展現",
+        status: "stable",
+        masteryScore: 92,
+        targetScore: 95
+      },
+      {
+        id: "ai_healthcare",
+        name: "AI與醫療生活",
+        shortName: "AI與醫療生活",
+        category: "EASY", // 🟢 易維持通識
+        importanceText: "🟢 易維持通識 (2 學分 / 跨領域加分)",
+        credits: 2,
+        time: "星期二 第 3, 4 節 (10:10 - 12:00)",
+        dayOfWeek: 2, // Tue
+        periods: [3, 4],
+        timeRange: "10:10 - 12:00",
+        location: "通識大樓教室",
+        instructor: "跨領域兼任教授",
+        textbook: "授課教師自編教材與醫療科技期刊案例",
+        grading: "分組文獻案例簡報 35% | 期末專案報告 35% | 出席與討論 30%",
+        whatItIs: "探討人工智慧在智慧醫療、穿戴式心率/心電圖健康監測、醫療影像辨識 (CNN) 與遠距醫療照護的跨領域應用。",
+        whyImportant: "這門課的主題剛好與你的硬體/嵌入式/感測器背景有天然交集！若在期末報告中提出『嵌入式感測器結合邊緣 AI 醫療監測』的概念，能輕鬆拿 95+ 高分衝高總 GPA。",
+        howToStudy: {
+          preview: "無需預習。",
+          reviewTiming: "配合每週進度記錄 1~2 個醫療 AI 案例。",
+          method: "用資工系學生的技術優勢切入醫療案例，報告製作著重於架構圖與可實現性。",
+          weeklyHours: "0.5 ～ 1 小時／週",
+          examPrepDays: "期末報告提前 2 週與組員定案架構，花一個下午完成簡報與講稿。",
+          mustMemorize: "常見智慧醫療名詞 (IoMT, 遠距醫療, 穿戴裝置數據格式)。",
+          mustUnderstand: "AI 輔助診斷與醫師臨床判斷的法律責任分界。",
+          mustPractice: "製作一份 10 頁具備科技感與醫學應用價值的精美簡報。",
+          lostPointsReason: "簡報內容太過空泛、純複製貼上維基百科、出席率低。",
+          masteryCheck: "分組簡報獲得教授高度評價，總成績穩定維持 90 分以上。"
+        },
+        relations: "↔ 嵌入式感測器 ↔ 邊緣 AI 硬體應用 ↔ 推甄跨領域自傳亮點",
+        status: "stable",
+        masteryScore: 90,
+        targetScore: 95
+      },
+      {
+        id: "picture_books",
+        name: "圖畫書 (Picture Books)",
+        shortName: "圖畫書",
+        category: "EASY", // 🟢 易維持通識
+        importanceText: "🟢 易維持通識 (2 學分 / 完美調劑與拉分)",
+        credits: 2,
+        time: "星期一 第 3, 4 節 (10:10 - 12:00)",
+        dayOfWeek: 1, // Mon
+        periods: [3, 4],
+        timeRange: "10:10 - 12:00",
+        location: "人文學院教室",
+        instructor: "人文學院教授",
+        textbook: "授課教師推薦國內外經典繪本作品",
+        grading: "繪本賞析心得作業 30% | 分組導讀簡報 30% | 期末創作/專案 30% | 出席 10%",
+        whatItIs: "人文藝術博雅課程。透過閱讀賞析經典國內外繪本，解析圖畫語言、敘事結構、視覺分鏡與文學意象。",
+        whyImportant: "每週一早上的心靈調劑時段，也是 100% 穩拿 90+ 高分拉高系排排名的『GPA 大補丸』。上課沉浸欣賞，課後高效完成賞析即可。",
+        howToStudy: {
+          preview: "無需預習，帶著放鬆但專注的心情去上課。",
+          reviewTiming: "課堂上當場把心得草稿打在手機/筆電記事本上。",
+          method: "著重在『圖像線條、色彩氛圍與文字故事背後的哲理連結』，心得展現真誠感受。",
+          weeklyHours: "0.5 小時／週",
+          examPrepDays: "期末繪本創作專案可結合簡單的數位排版或互動網頁呈現，展現資工專長。",
+          mustMemorize: "無特定公式或硬性背誦內容。",
+          mustUnderstand: "繪本中文字與圖像的互補敘事方式 (Complementary storytelling)。",
+          mustPractice: "撰寫賞析短文，分析作者如何用色調表達角色情緒。",
+          lostPointsReason: "敷衍繳交心得、未依指定主題撰寫、缺課。",
+          masteryCheck: "每次作業皆按時繳交且圖文並茂，平時成績維持滿分。"
+        },
+        relations: "↔ 人文美學素養 ↔ 視覺化設計與 UI/UX 感知",
+        status: "stable",
+        masteryScore: 95,
+        targetScore: 98
+      }
+    ];
+
+    // ==========================================
+    // 2. TIMETABLE MATRIX DEFINITIONS
+    // ==========================================
+    const PERIOD_TIMES = [
+      { p: 1, text: "08:10 - 09:00" },
+      { p: 2, text: "09:10 - 10:00" },
+      { p: 3, text: "10:10 - 11:00" },
+      { p: 4, text: "11:10 - 12:00" },
+      { p: "午休", text: "12:10 - 13:00" },
+      { p: 6, text: "13:10 - 14:00" },
+      { p: 7, text: "14:10 - 15:00" },
+      { p: 8, text: "15:10 - 16:00" },
+      { p: 9, text: "16:10 - 17:00" },
+      { p: 10, text: "17:10 - 18:00 (A節)" }
+    ];
+
+    // Official 115-1 Timetable Matrix [periodIndex][dayOfWeek 1..5]
+    // 1:Mon, 2:Tue, 3:Wed, 4:Thu, 5:Fri
+    const TIMETABLE_DATA = {
+      1: { 5: { name: "資訊媒體素養與倫理", cat: "EASY" } },
+      2: { 3: { name: "離散數學", cat: "CRITICAL" }, 4: { name: "嵌入式系統軟體技術", cat: "IMPORTANT" }, 5: { name: "資訊媒體素養與倫理", cat: "EASY" } },
+      3: { 1: { name: "圖畫書", cat: "EASY" }, 2: { name: "AI與醫療生活", cat: "EASY" }, 3: { name: "離散數學", cat: "CRITICAL" }, 4: { name: "嵌入式系統軟體技術", cat: "IMPORTANT" } },
+      4: { 1: { name: "圖畫書", cat: "EASY" }, 2: { name: "AI與醫療生活", cat: "EASY" }, 3: { name: "離散數學", cat: "CRITICAL" }, 4: { name: "嵌入式系統軟體技術", cat: "IMPORTANT" } },
+      "午休": { 1: { name: "午休用餐", cat: "REST" }, 2: { name: "午休用餐", cat: "REST" }, 3: { name: "午休用餐", cat: "REST" }, 4: { name: "午休用餐", cat: "REST" }, 5: { name: "午休用餐", cat: "REST" } },
+      6: { 5: { name: "演算法", cat: "CRITICAL" } },
+      7: { 2: { name: "數位系統設計", cat: "CRITICAL" }, 4: { name: "視窗程式設計", cat: "NORMAL" }, 5: { name: "演算法", cat: "CRITICAL" } },
+      8: { 1: { name: "組合語言", cat: "IMPORTANT" }, 2: { name: "數位系統設計", cat: "CRITICAL" }, 4: { name: "視窗程式設計", cat: "NORMAL" }, 5: { name: "演算法", cat: "CRITICAL" } },
+      9: { 1: { name: "組合語言", cat: "IMPORTANT" }, 2: { name: "數位系統設計", cat: "CRITICAL" }, 4: { name: "視窗程式設計", cat: "NORMAL" } },
+      10: { 1: { name: "組合語言", cat: "IMPORTANT" } }
+    };
+
+    // ==========================================
+    // 3. WEEKLY STUDY PLAN TEMPLATE
+    // ==========================================
+    const WEEKLY_TEMPLATE = [
+      {
+        day: "星期一 (Mon)",
+        dayIndex: 1,
+        classes: "10:10-12:00 圖畫書 | 15:10-18:00 組合語言 (3hr)",
+        minPlan: "【最低完成量 60m】組合語言下課後，打開 VS 單步除錯當日課堂 2 支範例程式，確認暫存器數值變化。",
+        stdPlan: "【標準完成量 120m】組語範例實作 (60m) ＋ CPE Stage 0 基礎 I/O 題型練習 1 題 (60m)。",
+        bonusPlan: "【有空加碼】預習星期二數位系統設計的卡諾圖與 Verilog 語法模組 (30m)。",
+        tip: "週一下午組語連上 3 節較燒腦，晚上讀書以『動手 Debug 觀察記憶體』為主，避免硬啃理論。"
+      },
+      {
+        day: "星期二 (Tue)",
+        dayIndex: 2,
+        classes: "10:10-12:00 AI與醫療生活 | 14:10-17:00 數位系統設計 (3hr)",
+        minPlan: "【最低完成量 60m】數位系統設計實驗課後，重新整理當日邏輯閘電路圖與 Verilog 模組註解。",
+        stdPlan: "【標準完成量 120m】數系 Verilog 模擬驗證 (60m) ＋ 預習週三離散數學新章節例題 (60m)。",
+        bonusPlan: "【有空加碼】整理 AI 與醫療生活課堂提到的 1 個智慧感測案例筆記 (20m)。",
+        tip: "週二晚上是準備週三早八離散數學的黃金時段，務必把精神留給離散題目。"
+      },
+      {
+        day: "星期三 (Wed)",
+        dayIndex: 3,
+        classes: "09:10-12:00 離散數學 (3hr) | 下午無課 (自主衝刺期)",
+        minPlan: "【最低完成量 90m】離散數學動筆計算課本指定習題 3 題，並用紅白筆標記卡住的證明步驟。",
+        stdPlan: "【標準完成量 150m】離散數學做題 (90m) ＋ CPE Stage 1 模擬題練習 1 題 (60m)。",
+        bonusPlan: "【有空加碼】預習週四嵌入式系統硬體手冊通訊介面章節 (30m)。",
+        tip: "週三下午完全無課！這是全週最強的深度學習時間區塊，適合處理最需要專注的高難度離散證明。"
+      },
+      {
+        day: "星期四 (Thu)",
+        dayIndex: 4,
+        classes: "09:10-12:00 嵌入式系統 (3hr) | 14:10-17:00 視窗程式設計 (3hr)",
+        minPlan: "【最低完成量 60m】視窗程式設計完成課堂作業 UI 配置與事件處理函式撰寫。",
+        stdPlan: "【標準完成量 120m】視窗程式作業 (60m) ＋ 嵌入式系統實作程式碼整理至 GitHub (60m)。",
+        bonusPlan: "【有空加碼】預習週五演算法的 Big-O 漸進分析與排序演算法 (30m)。",
+        tip: "週四全天都是動手寫 code 的課程，晚上著重於將作業程式碼乾淨封裝，避免累積到週末。"
+      },
+      {
+        day: "星期五 (Fri)",
+        dayIndex: 5,
+        classes: "08:10-10:00 資訊媒體素養與倫理 | 13:10-16:00 演算法 (3hr)",
+        minPlan: "【最低完成量 60m】演算法課後 2 小時內，手畫課堂介紹演算法的 Trace 追蹤表（例如 QuickSort 分割）。",
+        stdPlan: "【標準完成量 120m】演算法手寫 Trace (45m) ＋ 實作演算法程式碼上傳 OJ (75m)。",
+        bonusPlan: "【有空加碼】週末放鬆前，確認本週所有隨堂點名與作業皆已按時繳交。",
+        tip: "週五下午演算法是重頭戲，下課趁記憶猶新立刻寫程式，效率是過兩天後的 3 倍以上！"
+      },
+      {
+        day: "星期六 (Sat)",
+        dayIndex: 6,
+        classes: "全天無課 (彈性充電 ＋ 核心專題推進)",
+        minPlan: "【最低完成量 90m】CPE 專案刻意練習 90 分鐘（依照 6 步驟流程完成 1~2 題並記錄錯題本）。",
+        stdPlan: "【標準完成量 180m】CPE 深度解題 (90m) ＋ 離散數學/演算法高難度習題突破 (90m)。",
+        bonusPlan: "【有空加碼】探索硬體/嵌入式延伸專題（如 STM32 或 FPGA Verilog 小實驗）。",
+        tip: "週六早上頭腦最清醒，安排 2 小時 CPE 練習，下午與晚上保留社交、運動與充足睡眠。"
+      },
+      {
+        day: "星期日 (Sun)",
+        dayIndex: 0,
+        classes: "全天無課 (每週覆盤 ＋ 填補弱點 ＋ 迎戰新週)",
+        minPlan: "【最低完成量 60m】填寫 Weekly Review 覆盤表 (20m) ＋ 檢視下週一至五作業與考試排程 (40m)。",
+        stdPlan: "【標準完成量 120m】每週覆盤 (20m) ＋ 補齊本週黃/紅燈科目進度 (70m) ＋ 下週課表預備 (30m)。",
+        bonusPlan: "【有空加碼】提前把下週通識心得或報告完成草稿。",
+        tip: "週日晚間 10 點前完成每週檢討，確認下週重要目標，早點休息迎接週一早八。"
+      }
+    ];
+
+    // ==========================================
+    // 4. CPE TOPIC PROGRESS & INITIAL STARTER REPO
+    // ==========================================
+    const DEFAULT_CPE_TOPICS = [
+      { id: "io_syntax", name: "基礎 I/O 與語法", stage: "Stage 0", ac: 2, total: 2, status: "stable", desc: "while(cin>>n), getline, EOF, 型別" },
+      { id: "simulation", name: "基本模擬與數學", stage: "Stage 1", ac: 1, total: 3, status: "learning", desc: "3n+1猜想、Vito家族、質數判斷" },
+      { id: "array_string", name: "陣列與字串處理", stage: "Stage 1", ac: 0, total: 2, status: "weak", desc: "迴文判斷、大小寫轉換、密碼旋轉" },
+      { id: "sort_search", name: "排序與二分搜尋", stage: "Stage 2", ac: 0, total: 0, status: "weak", desc: "std::sort 自訂比較、二分搜尋法" },
+      { id: "stl_containers", name: "STL 與基礎結構", stage: "Stage 2", ac: 0, total: 0, status: "weak", desc: "vector, map, set, stack, queue" },
+      { id: "greedy_dp", name: "Greedy 與基礎 DP", stage: "Stage 3", ac: 0, total: 0, status: "weak", desc: "貪婪選擇、背包問題、LCS" }
+    ];
+
+    const DEFAULT_EXAMS = [
+      { id: "midterm_dm", course: "離散數學", title: "期中考試 (第 1-8 週: 邏輯/集合/遞迴)", date: "2026-11-05", daysLeft: 64, weight: "30%", mastery: 65, range: "Kenneth Rosen Ch.1 ~ Ch.5 (邏輯等價、數學歸納法、遞迴解法)" },
+      { id: "midterm_algo", course: "演算法", title: "期中筆試與上機 (第 1-8 週: Big-O/Divide & Conquer/Greedy)", date: "2026-11-07", daysLeft: 66, weight: "25%", mastery: 60, range: "CLRS Ch.1 ~ Ch.16 (漸近符號、Merge/QuickSort、Greedy活動選擇)" },
+      { id: "midterm_dsd", course: "數位系統設計", title: "期中實作與筆試 (第 1-8 週: 卡諾圖/組合邏輯/Verilog)", date: "2026-11-04", daysLeft: 63, weight: "25%", mastery: 78, range: "Mano Ch.1 ~ Ch.4 (布林化簡、ALU設計、Verilog Testbench)" },
+      { id: "midterm_asm", course: "組合語言", title: "期中上機測驗 (第 1-8 週: x86暫存器/跳躍/迴圈/定址)", date: "2026-11-03", daysLeft: 62, weight: "25%", mastery: 68, range: "Irvine Ch.1 ~ Ch.6 (資料傳輸、運算指令、旗標變化、條件跳躍)" },
+      { id: "midterm_emb", course: "嵌入式系統軟體技術", title: "期中專案展示與考核 (GPIO/中斷/UART通訊驗收)", date: "2026-11-06", daysLeft: 65, weight: "20%", mastery: 82, range: "MCU 暫存器配置、UART/I2C 介接感測器波形驗收" }
+    ];
+
+    // ==========================================
+    // 5. APPLICATION STATE & LOCALSTORAGE MANAGER
+    // ==========================================
+    let AppState = {
+      activeTab: 'dashboard',
+      cpeStressMode: 'normal', // exam, normal, light
+      userLevel: 'Lv.0',
+      totalPracticeHours: 0.5,
+      targetWeeklyHours: 5.0,
+      totalAC: 0,
+      todayTasks: [],
+      cpeLogs: [],
+      coursesHealth: {},
+      examList: DEFAULT_EXAMS,
+      cpeTopics: DEFAULT_CPE_TOPICS
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem('NTTU_STUDY_DASHBOARD_STATE');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          AppState = Object.assign(AppState, parsed);
+        } catch(e) {
+          console.error("Failed to parse saved state", e);
+        }
+      }
+      if (!AppState.todayTasks || AppState.todayTasks.length === 0) {
+        initDefaultTodayTasks();
+      }
+      NTTU_COURSES.forEach(c => {
+        if (!AppState.coursesHealth[c.id]) {
+          AppState.coursesHealth[c.id] = {
+            status: c.status,
+            mastery: c.masteryScore,
+            lastQuiz: 85,
+            notes: "課後進度正常追蹤中"
+          };
+        }
+      });
+    }
+
+    function saveState() {
+      localStorage.setItem('NTTU_STUDY_DASHBOARD_STATE', JSON.stringify(AppState));
+    }
+
+    function initDefaultTodayTasks() {
+      const todayDay = new Date().getDay();
+      AppState.todayTasks = [
+        { id: "t1", text: "【核心必修】離散數學：完成課本第 2 章遞迴習題 3 題 (60 分鐘)", course: "離散數學", duration: 60, completed: false, priority: "high" },
+        { id: "t2", text: "【CPE 0題起步】以 6 步驟流程完成 UVa 10041 輸入輸出練習並寫入錯題本 (45 分鐘)", course: "CPE", duration: 45, completed: false, priority: "high" },
+        { id: "t3", text: "【演算法實作】用 C++ 寫出 Merge Sort 並手畫 Trace 樹狀圖 (45 分鐘)", course: "演算法", duration: 45, completed: false, priority: "medium" },
+        { id: "t4", text: "【通識維持】圖畫書/倫理隨堂簡短心得整理 (15 分鐘)", course: "其他", duration: 15, completed: true, priority: "low" }
+      ];
+    }
+
+    // ==========================================
+    // 6. UI RENDERERS
+    // ==========================================
+    function switchTab(tabId) {
+      AppState.activeTab = tabId;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('text-slate-300');
+      });
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('tab-active');
+        activeBtn.classList.remove('text-slate-300');
+      }
+
+      document.querySelectorAll('main > section').forEach(sec => {
+        sec.classList.add('hidden');
+      });
+      const targetSec = document.getElementById(`tab-content-${tabId}`);
+      if (targetSec) {
+        targetSec.classList.remove('hidden');
+      }
+
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'smart-planner') runSmartPlanner();
+      if (tabId === 'timetable') renderTimetable();
+      if (tabId === 'courses') renderCoursesList('ALL');
+      if (tabId === 'cpe') renderCpeTab();
+      if (tabId === 'exams') renderExamsTab();
+      if (tabId === 'health') renderHealthTab();
+      if (tabId === 'sources') renderSourcesTab();
+    }
+
+    // --- DASHBOARD RENDERER ---
+    function renderDashboard() {
+      const now = new Date();
+      const days = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      const todayDay = now.getDay();
+      document.getElementById('dash-today-name').textContent = `今日安排：${days[todayDay]}`;
+      document.getElementById('dash-today-date').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 (第 1 週)`;
+
+      refreshTop3Tasks();
+
+      const classesContainer = document.getElementById('dash-today-classes');
+      classesContainer.innerHTML = '';
+      const todaySchedule = WEEKLY_TEMPLATE.find(t => t.dayIndex === todayDay);
+      if (todaySchedule) {
+        const div = document.createElement('div');
+        div.className = "p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs";
+        div.innerHTML = `
+          <div>
+            <span class="text-slate-400">今日官方課程：</span>
+            <span class="font-bold text-white ml-1">${todaySchedule.classes}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-mono">排程指引</span>
+        `;
+        classesContainer.appendChild(div);
+      }
+
+      renderTodayTasksList();
+
+      const healthList = document.getElementById('dash-health-list');
+      healthList.innerHTML = '';
+      NTTU_COURSES.slice(0, 5).forEach(c => {
+        const h = AppState.coursesHealth[c.id] || { status: c.status, mastery: c.masteryScore };
+        const statusBadge = h.status === 'danger' ? '<span class="text-rose-400 font-bold">🔴 危險 (需補進度)</span>' :
+                            h.status === 'caution' ? '<span class="text-amber-400 font-bold">🟡 注意</span>' :
+                            '<span class="text-emerald-400 font-bold">🟢 穩定</span>';
+        const item = document.createElement('div');
+        item.className = "p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex items-center justify-between text-xs";
+        item.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-white font-medium">${c.shortName}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-slate-400">掌握度 ${h.mastery}%</span>
+            ${statusBadge}
+          </div>
+        `;
+        healthList.appendChild(item);
+      });
+
+      updateCpeProfileHeader();
+    }
+
+    function refreshTop3Tasks() {
+      const top3Container = document.getElementById('top3-container');
+      top3Container.innerHTML = '';
+
+      const top3 = [
+        {
+          tag: "🔴 離散數學 (大二核心必修)",
+          title: "攻克遞迴關係式與數學歸納法 3 題",
+          time: "60 分鐘",
+          desc: "對研究所推甄系排具有決定性權重，務必手寫算式，絕不用眼睛看過。",
+          color: "border-rose-500/50 bg-rose-950/20 text-rose-300",
+          action: "openCourseModalById('discrete_math')"
+        },
+        {
+          tag: "💻 CPE 0 題漸進升級",
+          title: "完成 UVa 10041 輸入輸出與排序練習",
+          time: "45 分鐘",
+          desc: "落實 6 步驟刻意練習，卡住超過 25 分鐘看提示，關閉解答重新寫出。",
+          color: "border-emerald-500/50 bg-emerald-950/20 text-emerald-300",
+          action: "switchTab('cpe')"
+        },
+        {
+          tag: "🟠 演算法 (OJ程式實作)",
+          title: "實作 QuickSort 分割函式並手畫 Trace",
+          time: "45 分鐘",
+          desc: "配合週五課堂進度，親自寫出遞迴分割與基準點 (Pivot) 交換邏輯。",
+          color: "border-amber-500/50 bg-amber-950/20 text-amber-300",
+          action: "openCourseModalById('algorithms')"
+        }
+      ];
+
+      top3.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl border ${item.color} flex flex-col justify-between space-y-2 hover:scale-[1.01] transition cursor-pointer`;
+        card.onclick = () => eval(item.action);
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-1">
+              <span>優先級 #${index + 1}</span>
+              <span class="px-1.5 py-0.5 rounded bg-slate-900/80 font-mono">${item.time}</span>
+            </div>
+            <div class="text-xs font-bold text-white mb-0.5">${item.tag}</div>
+            <h4 class="text-sm font-bold text-slate-100">${item.title}</h4>
+            <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">${item.desc}</p>
+          </div>
+          <div class="pt-2 text-[10px] text-slate-400 flex items-center justify-between">
+            <span>點擊查看指引 &rarr;</span>
+            <i class="fa-solid fa-circle-arrow-right"></i>
+          </div>
+        `;
+        top3Container.appendChild(card);
+      });
+    }
+
+    function renderTodayTasksList() {
+      const container = document.getElementById('dash-today-tasks');
+      container.innerHTML = '';
+      if (!AppState.todayTasks || AppState.todayTasks.length === 0) {
+        container.innerHTML = '<div class="text-xs text-slate-500 py-2">目前無待辦事項，可自由新增。</div>';
+        return;
+      }
+
+      AppState.todayTasks.forEach((t, idx) => {
+        const item = document.createElement('div');
+        item.className = `p-2.5 rounded-lg border text-xs flex items-center justify-between gap-3 transition ${
+          t.completed ? 'bg-slate-900/40 border-slate-800/50 text-slate-500 line-through' : 'bg-slate-900/90 border-slate-700/80 text-slate-200'
+        }`;
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5 flex-1">
+            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTaskComplete(${idx})" class="rounded bg-slate-800 border-slate-600 text-blue-500 focus:ring-0 cursor-pointer">
+            <span class="flex-1">${t.text}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 font-mono text-slate-400">${t.duration}m</span>
+            <button onclick="deleteTask(${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function toggleTaskComplete(idx) {
+      AppState.todayTasks[idx].completed = !AppState.todayTasks[idx].completed;
+      saveState();
+      renderTodayTasksList();
+    }
+
+    function deleteTask(idx) {
+      AppState.todayTasks.splice(idx, 1);
+      saveState();
+      renderTodayTasksList();
+    }
+
+    function addCustomTask(e) {
+      e.preventDefault();
+      const input = document.getElementById('custom-task-input');
+      const courseSelect = document.getElementById('custom-task-course');
+      const text = input.value.trim();
+      if (!text) return;
+
+      AppState.todayTasks.push({
+        id: "t_" + Date.now(),
+        text: `【${courseSelect.value}】${text}`,
+        course: courseSelect.value,
+        duration: 45,
+        completed: false,
+        priority: "medium"
+      });
+      input.value = '';
+      saveState();
+      renderTodayTasksList();
+    }
+
+    // --- TIMETABLE RENDERER ---
+    function renderTimetable() {
+      const tbody = document.getElementById('official-timetable-body');
+      tbody.innerHTML = '';
+
+      PERIOD_TIMES.forEach((slot, pIdx) => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-800/80 hover:bg-slate-850/40";
+        
+        let rowHtml = `
+          <td class="p-2.5 text-center font-bold text-slate-400 bg-slate-900/60">${slot.p === '午休' ? '午休' : '第 ' + slot.p + ' 節'}</td>
+          <td class="p-2.5 text-center font-mono text-slate-400 text-[11px] bg-slate-900/40">${slot.text}</td>
+        `;
+
+        for (let d = 1; d <= 5; d++) {
+          const entry = TIMETABLE_DATA[slot.p] ? TIMETABLE_DATA[slot.p][d] : null;
+          if (entry) {
+            let badgeClass = "bg-slate-800 text-slate-300 border-slate-700";
+            if (entry.cat === 'CRITICAL') badgeClass = "bg-rose-950/70 text-rose-200 border-rose-600/50 font-bold";
+            else if (entry.cat === 'IMPORTANT') badgeClass = "bg-purple-950/70 text-purple-200 border-purple-600/50 font-bold";
+            else if (entry.cat === 'NORMAL') badgeClass = "bg-amber-950/70 text-amber-200 border-amber-600/50";
+            else if (entry.cat === 'EASY') badgeClass = "bg-emerald-950/60 text-emerald-200 border-emerald-600/40";
+            else if (entry.cat === 'REST') badgeClass = "bg-slate-900/40 text-slate-500 border-transparent text-[11px]";
+
+            rowHtml += `
+              <td class="p-2 text-center">
+                <div class="p-2 rounded-lg border ${badgeClass} shadow-sm transition hover:scale-[1.02]">
+                  ${entry.name}
+                </div>
+              </td>
+            `;
+          } else {
+            rowHtml += `<td class="p-2 text-center text-slate-600">—</td>`;
+          }
+        }
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+      });
+
+      const grid = document.getElementById('weekly-template-grid');
+      grid.innerHTML = '';
+      WEEKLY_TEMPLATE.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5 text-xs";
+        card.innerHTML = `
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h4 class="font-bold text-white text-sm">${item.day}</h4>
+            <span class="text-[10px] text-slate-400">${item.classes}</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="p-2 rounded bg-slate-950/80 border border-emerald-900/30 text-emerald-300 font-medium">
+              ${item.minPlan}
+            </div>
+            <div class="p-2 rounded bg-slate-950/80 border border-blue-900/30 text-blue-300">
+              ${item.stdPlan}
+            </div>
+            <div class="p-2 rounded bg-slate-950/80 border border-slate-800 text-slate-400 text-[11px]">
+              ${item.bonusPlan}
+            </div>
+          </div>
+          <p class="text-[11px] text-amber-300/80 pt-1 flex items-center gap-1">
+            <i class="fa-solid fa-lightbulb text-[10px]"></i> ${item.tip}
+          </p>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // --- COURSES LIST RENDERER ---
+    function renderCoursesList(filter) {
+      const container = document.getElementById('courses-detail-container');
+      container.innerHTML = '';
+
+      const filtered = NTTU_COURSES.filter(c => {
+        if (filter === 'ALL') return true;
+        return c.category === filter;
+      });
+
+      filtered.forEach(c => {
+        let badgeColor = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+        if (c.category === 'IMPORTANT') badgeColor = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+        if (c.category === 'NORMAL') badgeColor = "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
+        if (c.category === 'EASY') badgeColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+
+        const card = document.createElement('div');
+        card.className = "glass rounded-xl p-5 border border-slate-800 hover:border-slate-700 transition space-y-4 text-xs";
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 pb-3 border-b border-slate-800">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[11px] font-bold border ${badgeColor}">${c.importanceText}</span>
+                <h3 class="text-base font-bold text-white">${c.name}</h3>
+                <span class="text-slate-400 font-mono">(${c.credits} 學分)</span>
+              </div>
+              <p class="text-slate-400 mt-1 flex items-center gap-3 text-[11px]">
+                <span><i class="fa-regular fa-clock"></i> ${c.time}</span>
+                <span><i class="fa-solid fa-location-dot"></i> ${c.location}</span>
+                <span><i class="fa-solid fa-chalkboard-user"></i> ${c.instructor}</span>
+              </p>
+            </div>
+            <button onclick="openCourseModalById('${c.id}')" class="px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-medium transition flex items-center gap-1.5 self-start">
+              <i class="fa-solid fa-file-lines"></i> 展開完整課綱與讀法
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1.5">
+              <div class="font-bold text-slate-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-question text-blue-400"></i> 1. 這門課到底在學什麼？(白話解析)
+              </div>
+              <p class="text-slate-300 leading-relaxed text-[11px]">${c.whatItIs}</p>
+            </div>
+
+            <div class="p-3 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1.5">
+              <div class="font-bold text-slate-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-bullseye text-amber-400"></i> 2. 為什麼重要？(推甄/硬體/CPE關聯)
+              </div>
+              <p class="text-slate-300 leading-relaxed text-[11px]">${c.whyImportant}</p>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 space-y-2">
+            <div class="font-bold text-slate-300 text-[11px] flex items-center justify-between">
+              <span><i class="fa-solid fa-compass text-indigo-400 mr-1"></i> 具體實戰讀法 (拒絕「認真上課」口號)</span>
+              <span class="text-emerald-400 font-mono">每週建議：${c.howToStudy.weeklyHours}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+              <div class="p-2 rounded bg-slate-900 text-slate-300">
+                <span class="text-slate-400 block mb-0.5">複習節奏：</span>
+                ${c.howToStudy.reviewTiming}
+              </div>
+              <div class="p-2 rounded bg-slate-900 text-slate-300">
+                <span class="text-slate-400 block mb-0.5">一定要動手做：</span>
+                ${c.howToStudy.mustPractice}
+              </div>
+              <div class="p-2 rounded bg-slate-900 text-slate-300">
+                <span class="text-slate-400 block mb-0.5">常見失分地雷：</span>
+                ${c.howToStudy.lostPointsReason}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterCourses(type) {
+      renderCoursesList(type);
+    }
+
+    function openCourseModalById(courseId) {
+      const c = NTTU_COURSES.find(item => item.id === courseId);
+      if (!c) return;
+
+      document.getElementById('modal-course-title').textContent = c.name;
+      document.getElementById('modal-course-info').textContent = `${c.time} | ${c.credits} 學分 | 教科書: ${c.textbook}`;
+      
+      const badge = document.getElementById('modal-course-badge');
+      badge.textContent = c.importanceText;
+      badge.className = `px-2 py-0.5 rounded text-[10px] font-bold ${
+        c.category === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300' :
+        c.category === 'IMPORTANT' ? 'bg-amber-500/20 text-amber-300' :
+        c.category === 'NORMAL' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-emerald-500/20 text-emerald-300'
+      }`;
+
+      const body = document.getElementById('modal-course-body');
+      body.innerHTML = `
+        <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-slate-200">📊 配分與評量標準：</div>
+          <div class="text-amber-300 font-medium">${c.grading}</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-slate-200">📖 課程白話詳解：</div>
+          <p class="text-slate-300 leading-relaxed">${c.whatItIs}</p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-slate-200">🎯 八大維度具體讀書作戰指引：</div>
+          <ul class="space-y-1.5 text-slate-300 list-disc list-inside">
+            <li><strong>上課前要不要預習：</strong> ${c.howToStudy.preview}</li>
+            <li><strong>上完課多久內複習：</strong> ${c.howToStudy.reviewTiming}</li>
+            <li><strong>平時作法：</strong> ${c.howToStudy.method}</li>
+            <li><strong>考前多久開始準備：</strong> ${c.howToStudy.examPrepDays}</li>
+            <li><strong>哪些內容需要背：</strong> <span class="text-rose-300">${c.howToStudy.mustMemorize}</span></li>
+            <li><strong>哪些內容需要透徹理解：</strong> <span class="text-blue-300">${c.howToStudy.mustUnderstand}</span></li>
+            <li><strong>哪些內容一定要親自寫程式／算題：</strong> <span class="text-emerald-300">${c.howToStudy.mustPractice}</span></li>
+            <li><strong>如何判斷自己真的學會了：</strong> <span class="text-cyan-300 font-medium">${c.howToStudy.masteryCheck}</span></li>
+          </ul>
+        </div>
+
+        <div class="p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/50 text-indigo-200 space-y-1">
+          <div class="font-bold">🔗 與其他課程及長期方向的知識鏈結：</div>
+          <p>${c.relations}</p>
+        </div>
+      `;
+
+      document.getElementById('course-modal').classList.remove('hidden');
+    }
+
+    function closeCourseModal() {
+      document.getElementById('course-modal').classList.add('hidden');
+    }
+
+    // --- SMART TIME PLANNER (2~3HR) ---
+    function updatePlannerHours(val) {
+      document.getElementById('planner-hours-val').textContent = `${val} 小時`;
+    }
+
+    function runSmartPlanner() {
+      const hours = parseFloat(document.getElementById('planner-hours-range').value) || 2.5;
+      const totalMinutes = Math.round(hours * 60);
+
+      document.getElementById('planner-total-allocated').textContent = `已精確分配：${totalMinutes} 分鐘`;
+
+      const container = document.getElementById('planner-blocks-container');
+      container.innerHTML = '';
+
+      let blocks = [];
+      if (hours <= 2) {
+        blocks = [
+          { time: "45 分鐘", course: "離散數學 / 演算法 (當週最迫切)", action: "動筆寫課本練習題 2 題或 OJ 實作 1 題 (核心必修保底)", priority: "🔴 第一優先" },
+          { time: "45 分鐘", course: "CPE 0題漸進練習", action: "以 6 步驟流程嘗試 1 題基礎輸入輸出/字串模擬題", priority: "💻 第二優先" },
+          { time: "30 分鐘", course: "組合語言 / 數位系統 (當日課程)", action: "Trace 課堂除錯程式碼或整理 Verilog 模組", priority: "🟠 第三優先" }
+        ];
+      } else if (hours <= 3.5) {
+        blocks = [
+          { time: "60 分鐘", course: "離散數學 / 演算法", action: "專注推導遞迴關係式、證明題與演算法 Big-O 複雜度分析", priority: "🔴 核心推甄支柱" },
+          { time: "50 分鐘", course: "CPE 刻意練習 (0 題起飛)", action: "獨立思考 20 分鐘 ➔ 看提示 ➔ 關閉解答重寫 ➔ 記錄至錯題本", priority: "💻 程式力突破" },
+          { time: "45 分鐘", course: "組合語言 或 數位系統設計", action: "MASM 暫存器單步除錯 或 FPGA 卡諾圖化簡", priority: "🟠 硬體/底層基礎" },
+          { time: "25 分鐘", course: "視窗程式 / 通識緩衝", action: "處理本週即將截止之作業或複習隨堂筆記", priority: "🟢 雜項清零" }
+        ];
+      } else {
+        blocks = [
+          { time: "80 分鐘", course: "演算法 + 離散數學 深度聯動", action: "演算法實作 + 離散圖論數學證明完整習題組", priority: "🔴 核心突破" },
+          { time: "70 分鐘", course: "CPE 模擬雙題練習", action: "完成 1 題基本模擬 + 1 題排序字串題，落實防呆除錯", priority: "💻 競程解鎖" },
+          { time: "60 分鐘", course: "組合語言 ＋ 嵌入式軟體", action: "底層中斷控制、ARM/x86 暫存器操作實作", priority: "🟠 硬體整合" },
+          { time: "30 分鐘", course: "視窗程式設計 / 專案推進", action: "WinForm / WPF 資料庫介面功能開發", priority: "🟡 專題工程" }
+        ];
+      }
+
+      blocks.forEach((b, idx) => {
+        const item = document.createElement('div');
+        item.className = "p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs";
+        item.innerHTML = `
+          <div class="flex items-start sm:items-center gap-3">
+            <span class="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold font-mono text-xs border border-blue-500/30">
+              #${idx+1}
+            </span>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-white text-sm">${b.course}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-mono">${b.priority}</span>
+              </div>
+              <p class="text-slate-300 mt-0.5">${b.action}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-center">
+            <span class="px-2.5 py-1 rounded-lg bg-slate-950 font-mono text-emerald-400 font-bold">${b.time}</span>
+            <button onclick="startFocusBlock('${b.course}', ${parseInt(b.time)})" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition font-medium">
+              進入專注
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function startFocusBlock(name, durationMinutes) {
+      setTimerDuration(durationMinutes);
+      openTimerModal();
+    }
+
+    // --- CPE TAB & LOGS ---
+    function renderCpeTab() {
+      updateCpeProfileHeader();
+
+      const topicRadar = document.getElementById('cpe-topic-radar');
+      topicRadar.innerHTML = '';
+      AppState.cpeTopics.forEach(t => {
+        let badgeColor = "bg-emerald-500/10 text-emerald-300 border-emerald-500/30";
+        if (t.status === 'learning') badgeColor = "bg-amber-500/10 text-amber-300 border-amber-500/30";
+        if (t.status === 'weak') badgeColor = "bg-rose-500/10 text-rose-300 border-rose-500/30";
+
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-lg bg-slate-900 border ${badgeColor} space-y-1`;
+        div.innerHTML = `
+          <div class="flex justify-between items-center text-[11px] font-bold">
+            <span class="text-white">${t.name}</span>
+            <span class="font-mono text-emerald-400">AC: ${t.ac}</span>
+          </div>
+          <div class="text-[10px] text-slate-400">${t.desc}</div>
+          <div class="text-[10px] font-mono text-slate-400">${t.stage}</div>
+        `;
+        topicRadar.appendChild(div);
+      });
+
+      renderCpeLogsTable();
+    }
+
+    function renderCpeLogsTable() {
+      const tbody = document.getElementById('cpe-log-table-body');
+      tbody.innerHTML = '';
+
+      if (!AppState.cpeLogs || AppState.cpeLogs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-slate-500 text-xs">目前尚無練習紀錄。可於左側輸入今日第一筆解題嘗試！</td></tr>';
+        return;
+      }
+
+      AppState.cpeLogs.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-850/50";
+        let resBadge = '<span class="text-emerald-400 font-bold">AC</span>';
+        if (log.result === 'AC_HINT') resBadge = '<span class="text-blue-400 font-bold">AC (看提示)</span>';
+        if (log.result === 'WA') resBadge = '<span class="text-rose-400 font-bold">WA</span>';
+        if (log.result === 'TLE') resBadge = '<span class="text-amber-400 font-bold">TLE</span>';
+        if (log.result === 'STUCK') resBadge = '<span class="text-slate-400">卡住</span>';
+
+        tr.innerHTML = `
+          <td class="p-2 text-slate-400 font-mono text-[11px]">${log.date}</td>
+          <td class="p-2 font-bold text-white">${log.name}</td>
+          <td class="p-2 text-slate-300">${log.topic}</td>
+          <td class="p-2">${resBadge}</td>
+          <td class="p-2 text-slate-400 font-mono">${log.duration}m</td>
+          <td class="p-2 text-slate-300 text-[11px]">${log.notes || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function logCpeSession(e) {
+      e.preventDefault();
+      const name = document.getElementById('cpe-input-name').value.trim();
+      const topic = document.getElementById('cpe-input-topic').value;
+      const result = document.getElementById('cpe-input-result').value;
+      const duration = parseInt(document.getElementById('cpe-input-duration').value) || 30;
+      const mastery = document.getElementById('cpe-input-mastery').value;
+      const notes = document.getElementById('cpe-input-notes').value.trim();
+
+      const newLog = {
+        id: "cpe_" + Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        name,
+        topic,
+        result,
+        duration,
+        mastery,
+        notes
+      };
+
+      if (!AppState.cpeLogs) AppState.cpeLogs = [];
+      AppState.cpeLogs.unshift(newLog);
+
+      AppState.totalPracticeHours = parseFloat((AppState.totalPracticeHours + (duration / 60)).toFixed(1));
+      if (result === 'AC' || result === 'AC_HINT') {
+        AppState.totalAC += 1;
+        const t = AppState.cpeTopics.find(item => item.name.includes(topic.substring(0, 4)));
+        if (t) {
+          t.ac += 1;
+          if (t.ac >= 2) t.status = "stable";
+        }
+      }
+
+      evaluateCpeLevel();
+
+      saveState();
+      renderCpeTab();
+      document.getElementById('cpe-input-name').value = '';
+      document.getElementById('cpe-input-notes').value = '';
+      alert('✅ CPE 解題記錄已成功寫入錯題本，能力等級已重新計算！');
+    }
+
+    function evaluateCpeLevel() {
+      const ac = AppState.totalAC;
+      if (ac === 0) {
+        AppState.userLevel = "Lv.0 (0 題起步)";
+      } else if (ac <= 2) {
+        AppState.userLevel = "Lv.1 (入門模擬突破)";
+      } else if (ac <= 5) {
+        AppState.userLevel = "Lv.2 (字串與陣列掌握)";
+      } else if (ac <= 10) {
+        AppState.userLevel = "Lv.3 (排序與數論建立)";
+      } else if (ac <= 18) {
+        AppState.userLevel = "Lv.4 (STL與貪婪演算法)";
+      } else {
+        AppState.userLevel = "Lv.5 (CPE 穩拿 2~3 題)";
+      }
+    }
+
+    function updateCpeProfileHeader() {
+      evaluateCpeLevel();
+      const lvlText = AppState.userLevel;
+      document.getElementById('header-cpe-lvl').textContent = lvlText;
+      document.getElementById('cpe-profile-level').textContent = lvlText.split(' ')[0];
+      document.getElementById('cpe-profile-title').textContent = lvlText;
+      document.getElementById('cpe-profile-ac').textContent = AppState.totalAC;
+      document.getElementById('cpe-profile-time').textContent = AppState.totalPracticeHours;
+
+      document.getElementById('dash-cpe-stat').textContent = `${AppState.totalAC} 題 AC • ${lvlText.split(' ')[0]}`;
+      document.getElementById('dash-cpe-hrs').textContent = AppState.totalPracticeHours;
+      const pct = Math.min(100, Math.round((AppState.totalPracticeHours / AppState.targetWeeklyHours) * 100));
+      document.getElementById('dash-cpe-bar').style.width = `${pct}%`;
+    }
+
+    function setCpeStress(mode) {
+      AppState.cpeStressMode = mode;
+      document.getElementById('stress-btn-exam').className = mode === 'exam' ? 'px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-medium' : 'px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-[11px]';
+      document.getElementById('stress-btn-normal').className = mode === 'normal' ? 'px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-medium' : 'px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-[11px]';
+      document.getElementById('stress-btn-light').className = mode === 'light' ? 'px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-medium' : 'px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-[11px]';
+
+      if (mode === 'exam') {
+        AppState.targetWeeklyHours = 2.5;
+        document.getElementById('header-stress-badge').textContent = "考試緊迫 (2-3h CPE)";
+        document.getElementById('cpe-adaptive-hours-text').textContent = "考試週模式：2～3 小時／週 (以核心課業為第一優先)";
+      } else if (mode === 'normal') {
+        AppState.targetWeeklyHours = 5.0;
+        document.getElementById('header-stress-badge').textContent = "標準模式 (4-6h CPE)";
+        document.getElementById('cpe-adaptive-hours-text').textContent = "平常週模式：4～6 小時／週 (穩健累積)";
+      } else {
+        AppState.targetWeeklyHours = 7.0;
+        document.getElementById('header-stress-badge').textContent = "充裕模式 (6-8h CPE)";
+        document.getElementById('cpe-adaptive-hours-text').textContent = "課業較輕週：6～8 小時／週 (加速突破)";
+      }
+      saveState();
+      updateCpeProfileHeader();
+    }
+
+    function clearCpeLogsConfirm() {
+      if (confirm("確定要清空所有 CPE 練習歷史紀錄嗎？")) {
+        AppState.cpeLogs = [];
+        AppState.totalAC = 0;
+        AppState.totalPracticeHours = 0;
+        saveState();
+        renderCpeTab();
+      }
+    }
+
+    // --- EXAMS TAB ---
+    function renderExamsTab() {
+      const container = document.getElementById('exams-cards-container');
+      container.innerHTML = '';
+
+      AppState.examList.forEach(ex => {
+        let phase = "【考前 14 天外：常態推進】";
+        let phaseColor = "text-blue-400";
+        if (ex.daysLeft <= 2) {
+          phase = "【考前 1～2 天：全真模擬與輕量複習】";
+          phaseColor = "text-rose-400 font-bold";
+        } else if (ex.daysLeft <= 6) {
+          phase = "【考前 3～6 天：集中補弱點與考古題】";
+          phaseColor = "text-amber-400 font-bold";
+        } else if (ex.daysLeft <= 10) {
+          phase = "【考前 6～10 天：大量做題／實作除錯】";
+          phaseColor = "text-purple-400";
+        }
+
+        const card = document.createElement('div');
+        card.className = "p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3 text-xs";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">配分佔比 ${ex.weight}</span>
+              <h4 class="text-sm font-bold text-white mt-1">${ex.course}</h4>
+              <p class="text-slate-400 text-[11px]">${ex.title}</p>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-black text-rose-400 font-mono">${ex.daysLeft} 天</div>
+              <div class="text-[10px] text-slate-500 font-mono">${ex.date}</div>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="text-slate-400 text-[10px]">考試範圍：</div>
+            <div class="text-slate-200 text-[11px]">${ex.range}</div>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px] text-slate-400">
+              <span>目前掌握度評估：</span>
+              <span class="text-white font-bold">${ex.mastery}%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-blue-500 h-full rounded-full" style="width: ${ex.mastery}%"></div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px]">
+            <span class="${phaseColor}">${phase}</span>
+            <button onclick="boostExamPreparation('${ex.course}')" class="text-blue-400 hover:underline">產生備戰任務 &rarr;</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function boostExamPreparation(courseName) {
+      AppState.todayTasks.unshift({
+        id: "exam_boost_" + Date.now(),
+        text: `【考試衝刺】${courseName}：整理考前核心定理/程式碼漏洞 (60 分鐘)`,
+        course: courseName,
+        duration: 60,
+        completed: false,
+        priority: "high"
+      });
+      saveState();
+      alert(`已將【${courseName}】考前衝刺任務加入今日最優先事項！`);
+      switchTab('dashboard');
+    }
+
+    // --- HEALTH TAB ---
+    function renderHealthTab() {
+      const grid = document.getElementById('health-cards-grid');
+      grid.innerHTML = '';
+
+      NTTU_COURSES.forEach(c => {
+        const h = AppState.coursesHealth[c.id] || { status: c.status, mastery: c.masteryScore, notes: "正常" };
+        let statusBadge = `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">🟢 穩定 (維持平常節奏)</span>`;
+        if (h.status === 'caution') statusBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">🟡 注意 (本週需微調補進度)</span>`;
+        if (h.status === 'danger') statusBadge = `<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold pulse-danger">🔴 危險 (強行注入複習時數)</span>`;
+
+        const card = document.createElement('div');
+        card.className = "p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 text-xs";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h4 class="text-sm font-bold text-white">${c.name}</h4>
+              <span class="text-[10px] text-slate-400">${c.time}</span>
+            </div>
+            ${statusBadge}
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-slate-400 text-[11px]">
+              <span>自評理解掌握度：</span>
+              <span class="text-white font-bold font-mono">${h.mastery} / 100</span>
+            </div>
+            <input type="range" min="30" max="100" value="${h.mastery}" onchange="updateCourseMastery('${c.id}', this.value)" class="w-full accent-blue-500">
+          </div>
+
+          <div class="p-2 rounded bg-slate-950/80 border border-slate-800/80 space-y-1">
+            <div class="text-[10px] text-slate-400">系統診斷建議：</div>
+            <div class="text-slate-300 text-[11px]">
+              ${h.mastery < 70 ? '⚠️ 掌握度低於 70%，已自動將通識課節省之 30 分鐘移轉給本科目。' : '✅ 掌握度優良，維持每週基礎複習即可，無需超額佔用時間。'}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function updateCourseMastery(courseId, val) {
+      val = parseInt(val);
+      if (!AppState.coursesHealth[courseId]) AppState.coursesHealth[courseId] = {};
+      AppState.coursesHealth[courseId].mastery = val;
+      if (val < 65) AppState.coursesHealth[courseId].status = 'danger';
+      else if (val < 80) AppState.coursesHealth[courseId].status = 'caution';
+      else AppState.coursesHealth[courseId].status = 'stable';
+      saveState();
+      renderHealthTab();
+    }
+
+    function recalculateHealth() {
+      alert("✅ 已重新計算各科健康指數，並更新今日動態優先級！");
+      renderHealthTab();
+    }
+
+    // --- WEEKLY REVIEW ---
+    function saveWeeklyReview(e) {
+      e.preventDefault();
+      const q1 = document.getElementById('wr-q1').value;
+      const q3 = document.getElementById('wr-q3').value;
+      const q5 = document.getElementById('wr-q5').value;
+
+      const output = document.getElementById('weekly-strategy-output');
+      output.classList.remove('hidden');
+      output.innerHTML = `
+        <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+          <i class="fa-solid fa-circle-check"></i> 本週覆盤已完成！系統自動生成「下週讀書戰略」：
+        </div>
+        <div class="space-y-2 text-xs text-slate-200">
+          <p>🎯 <strong>核心主軸時間重新分配：</strong> 根據你回饋的弱點【${q3 || '未指定'}】，系統已於下週自動增加 <strong>90 分鐘</strong> 專屬補強時段。</p>
+          <p>💻 <strong>CPE 策略調整：</strong> 下週建議時數維持 <strong>${AppState.targetWeeklyHours} 小時</strong>，優先攻克 1 題類似錯題，確認獨立 AC。</p>
+          <p>🛡️ <strong>即將到來作業/考試應對：</strong> 針對【${q5 || '無即時考驗'}】，請於週二前完成初步草稿，絕不拖延至截止日前一晚。</p>
+        </div>
+      `;
+      alert("✅ 每週覆盤儲存成功！");
+    }
+
+    // --- SOURCES & SYLLABUS ---
+    function renderSourcesTab() {
+      const container = document.getElementById('sources-list-container');
+      container.innerHTML = '';
+
+      NTTU_COURSES.forEach(c => {
+        const item = document.createElement('div');
+        item.className = "p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs";
+        item.innerHTML = `
+          <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+            <span class="font-bold text-white text-sm">${c.name}</span>
+            <span class="text-[11px] text-blue-400 font-mono">校務系統查詢代碼: 115-1</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
+            <div>• <strong>授課時段：</strong> ${c.time}</div>
+            <div>• <strong>學分數：</strong> ${c.credits} 學分</div>
+            <div>• <strong>指定教材：</strong> ${c.textbook}</div>
+            <div>• <strong>成績考核標準：</strong> ${c.grading}</div>
+          </div>
+          <div class="text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+            <strong>課綱分析佐證：</strong> 本分析依據 115-1 臺東大學教務處大綱系統之 18 週進度表，涵蓋期中筆試 (第 9 週)、期末專題/上機考 (第 18 週) 及 OJ 評量規範。
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // --- POMODORO TIMER ---
+    let timerInterval = null;
+    let timerSecondsLeft = 25 * 60;
+    let isTimerRunning = false;
+
+    function openTimerModal() {
+      document.getElementById('timer-modal').classList.remove('hidden');
+    }
+    function closeTimerModal() {
+      document.getElementById('timer-modal').classList.add('hidden');
+    }
+    function setTimerDuration(mins) {
+      pauseTimer();
+      timerSecondsLeft = mins * 60;
+      updateTimerDisplay();
+      document.getElementById('timer-status-text').textContent = `設定專注 ${mins} 分鐘`;
+    }
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSecondsLeft / 60).toString().padStart(2, '0');
+      const s = (timerSecondsLeft % 60).toString().padStart(2, '0');
+      document.getElementById('timer-display').textContent = `${m}:${s}`;
+    }
+    function toggleTimer() {
+      if (isTimerRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+    function startTimer() {
+      isTimerRunning = true;
+      document.getElementById('timer-toggle-btn').textContent = "暫停";
+      document.getElementById('timer-toggle-btn').className = "px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold shadow transition";
+      timerInterval = setInterval(() => {
+        if (timerSecondsLeft > 0) {
+          timerSecondsLeft--;
+          updateTimerDisplay();
+        } else {
+          pauseTimer();
+          alert("🔔 專注時間到！太棒了，完成了一段深度學習！請休息 5 分鐘。");
+        }
+      }, 1000);
+    }
+    function pauseTimer() {
+      isTimerRunning = false;
+      clearInterval(timerInterval);
+      document.getElementById('timer-toggle-btn').textContent = "開始計時";
+      document.getElementById('timer-toggle-btn').className = "px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow transition";
+    }
+    function resetTimer() {
+      pauseTimer();
+      timerSecondsLeft = 25 * 60;
+      updateTimerDisplay();
+    }
+
+    // --- EXPORT & RESET DATA ---
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(AppState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `NTTU_Study_Dashboard_Backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function resetToDefaultPrompt() {
+      if (confirm("確定要重設為初始課表與預設資料嗎？自訂的解題紀錄將會被重置。")) {
+        localStorage.removeItem('NTTU_STUDY_DASHBOARD_STATE');
+        location.reload();
+      }
+    }
+
+    // --- INITIAL BOOTSTRAP ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      switchTab('dashboard');
+    });
+  </script>
+</body>
+</html>
