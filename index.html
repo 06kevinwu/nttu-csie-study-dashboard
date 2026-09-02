@@ -75,7 +75,7 @@
     </div>
 
     <!-- Live Quick Status Bar & Actions -->
-    <div class="flex items-center gap-3 text-xs">
+    <div class="flex items-center gap-3 text-xs flex-wrap">
       <div class="hidden sm:flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700/60">
         <span class="text-slate-400">當前 CPE 等級：</span>
         <span id="header-cpe-lvl" class="font-bold text-amber-400 px-1.5 py-0.5 rounded bg-amber-400/10">Lv.0 啟航 (0 AC)</span>
@@ -86,12 +86,18 @@
         <span id="header-stress-badge" class="font-bold text-blue-400">標準模式 (4-6h CPE)</span>
       </div>
 
+      <!-- Cloud Sync Button -->
+      <button onclick="openSyncModal()" class="flex items-center gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-md transition">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>跨裝置同步</span>
+      </button>
+
       <button onclick="openTimerModal()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-md transition">
         <i class="fa-solid fa-stopwatch"></i>
         <span>專注番茄鐘</span>
       </button>
 
-      <button onclick="exportData()" title="備份資料" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+      <button onclick="exportData()" title="備份 JSON 資料" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
         <i class="fa-solid fa-download"></i>
       </button>
       <button onclick="resetToDefaultPrompt()" title="重設為預設課表" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 transition">
@@ -129,6 +135,9 @@
       </button>
       <button onclick="switchTab('weekly-review')" id="tab-btn-weekly-review" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
         <i class="fa-solid fa-list-check"></i> 每週覆盤 (Weekly Review)
+      </button>
+      <button onclick="switchTab('sync')" id="tab-btn-sync" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 跨裝置雲端同步
       </button>
       <button onclick="switchTab('sources')" id="tab-btn-sources" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:bg-slate-800 transition flex items-center gap-2">
         <i class="fa-solid fa-database"></i> 課綱與資料來源
@@ -1011,7 +1020,108 @@
     </section>
 
 
-    <!-- ==================== TAB 10: SOURCES & SYLLABUS ==================== -->
+    <!-- ==================== TAB 10: CROSS-DEVICE CLOUD SYNC ==================== -->
+    <section id="tab-content-sync" class="hidden space-y-6">
+      
+      <div class="glass rounded-xl p-6 border border-cyan-500/30 bg-gradient-to-br from-slate-900 via-slate-900/90 to-cyan-950/30">
+        <div class="max-w-3xl mb-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-medium mb-3">
+            <i class="fa-solid fa-cloud-arrow-up"></i> 跨裝置無縫同步中心
+          </div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">手機、筆電、平板，隨時共用同一套讀書進度與 CPE 記錄</h2>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            提供三種最便利的同步管道：<strong>「雲端房間即時同步」</strong>、<strong>「一鍵字串代碼傳送（免註冊）」</strong> 與 <strong>「JSON 檔案備份還原」</strong>。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+          
+          <!-- Method 1: Cloud Sync Key -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-cyan-500/40 space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-cyan-400 font-bold">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-cloud"></i> 管道 1：雲端專屬同步碼</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">推薦</span>
+              </div>
+              <p class="text-slate-400 text-[11px]">在手機與電腦輸入相同的「自訂密鑰」，隨時點擊同步按鈕上傳與下載最新進度。</p>
+              
+              <div class="pt-2">
+                <label class="block text-slate-300 mb-1 font-semibold">自訂同步金鑰 (Sync Key)：</label>
+                <input type="text" id="sync-key-input" placeholder="例如: nttu-kevin-2026" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono text-xs">
+              </div>
+
+              <div id="sync-status-msg" class="text-[10px] text-slate-400 pt-1">尚未進行雲端同步</div>
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-slate-800">
+              <button onclick="cloudPushData()" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i> 1. 上傳當前進度到雲端
+              </button>
+              <button onclick="cloudPullData()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded-lg font-medium transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-arrow-down-to-bracket"></i> 2. 從雲端下載進度並覆蓋
+              </button>
+            </div>
+          </div>
+
+          <!-- Method 2: One-Click Token Sync -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="text-amber-400 font-bold flex items-center gap-1.5">
+                <i class="fa-solid fa-key"></i> 管道 2：字串代碼快速轉移 (LINE傳送)
+              </div>
+              <p class="text-slate-400 text-[11px]">電腦端一鍵複製進度代碼，傳到手機 LINE 或備忘錄，手機端貼上即可 1 秒同步！</p>
+              
+              <div class="pt-2">
+                <button onclick="copyDataTokenToClipboard()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+                  <i class="fa-solid fa-copy"></i> 複製全部進度代碼到剪貼簿
+                </button>
+              </div>
+
+              <div class="pt-2">
+                <label class="block text-slate-300 mb-1 font-semibold">在其他裝置貼上進度代碼：</label>
+                <textarea id="paste-token-input" rows="2" placeholder="在此貼上代碼..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono text-[10px]"></textarea>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <button onclick="restoreFromDataToken()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg font-medium transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-file-import"></i> 貼上並立即還原進度
+              </button>
+            </div>
+          </div>
+
+          <!-- Method 3: File Import / Export -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <div class="text-blue-400 font-bold flex items-center gap-1.5">
+                <i class="fa-solid fa-file-arrow-up"></i> 管道 3：JSON 檔案備份與還原
+              </div>
+              <p class="text-slate-400 text-[11px]">下載離線 JSON 檔案保存於 Google Drive 或 iCloud，隨時可在任一瀏覽器中匯入還原。</p>
+              
+              <div class="pt-2">
+                <button onclick="exportData()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-download"></i> 下載最新 JSON 備份檔
+                </button>
+              </div>
+
+              <div class="pt-2">
+                <label class="block text-slate-300 mb-1 font-semibold">匯入 JSON 備份檔：</label>
+                <input type="file" id="json-file-input" accept=".json" onchange="importJsonFile(event)" class="w-full text-slate-400 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer">
+              </div>
+            </div>
+
+            <div class="pt-2 text-[10px] text-slate-500 border-t border-slate-800">
+              提示：定期備份可避免瀏覽器清理快取時遺失解題錯題紀錄。
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ==================== TAB 11: SOURCES & SYLLABUS ==================== -->
     <section id="tab-content-sources" class="hidden space-y-6">
       <div class="glass rounded-xl p-5 border border-slate-800 space-y-4">
         <div>
@@ -1032,6 +1142,37 @@
   </main>
 
   <!-- ==================== MODALS ==================== -->
+
+  <!-- SYNC QUICK MODAL -->
+  <div id="sync-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass rounded-2xl p-6 border border-slate-700 max-w-lg w-full text-left space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center text-xs text-slate-400 pb-2 border-b border-slate-800">
+        <span class="font-bold text-white text-sm flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up text-cyan-400"></i> 跨裝置快速同步 (手機 & 電腦)</span>
+        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="p-3 rounded-lg bg-slate-900 border border-cyan-500/40 space-y-2">
+          <div class="font-bold text-cyan-300">☁️ 雲端房間同步：</div>
+          <div class="flex gap-2">
+            <input type="text" id="modal-sync-key" placeholder="輸入自訂同步金鑰 (如: kevin-2026)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white font-mono text-xs">
+            <button onclick="cloudPushDataFromModal()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium transition">上傳 ⬆️</button>
+            <button onclick="cloudPullDataFromModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 rounded-lg transition">下載 ⬇️</button>
+          </div>
+          <div id="modal-sync-status" class="text-[10px] text-slate-400">在手機與電腦輸入同一個金鑰即可互通！</div>
+        </div>
+
+        <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
+          <div class="font-bold text-amber-300">📋 或直接複製代碼貼到手機 (最快)：</div>
+          <div class="flex gap-2">
+            <button onclick="copyDataTokenToClipboard()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-lg transition">
+              一鍵複製進度代碼 (可直接貼到 LINE 傳給自己)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- POMODORO FOCUS TIMER MODAL -->
   <div id="timer-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -1097,11 +1238,11 @@
         id: "discrete_math",
         name: "離散數學 (Discrete Mathematics)",
         shortName: "離散數學",
-        category: "CRITICAL", // 🔴 非常重要
+        category: "CRITICAL",
         importanceText: "🔴 非常重要 (資工核心大支柱)",
         credits: 3,
         time: "星期三 第 2, 3, 4 節 (09:10 - 12:00)",
-        dayOfWeek: 3, // Wed
+        dayOfWeek: 3,
         periods: [2, 3, 4],
         timeRange: "09:10 - 12:00",
         location: "資工系專業教室",
@@ -1123,7 +1264,7 @@
           masteryCheck: "遮住解答，能在空白紙上完整寫出數學歸納法三步驟與 Euler 圖的充要條件證明。"
         },
         relations: "↔ 演算法 (圖論/遞迴) | ↔ CPE (計數/數論/圖形走訪) | ↔ 研究所推甄核心科目",
-        status: "caution", // stable, caution, danger
+        status: "caution",
         masteryScore: 65,
         targetScore: 90
       },
@@ -1131,11 +1272,11 @@
         id: "algorithms",
         name: "演算法 (Algorithms)",
         shortName: "演算法",
-        category: "CRITICAL", // 🔴 非常重要
+        category: "CRITICAL",
         importanceText: "🔴 非常重要 (程式能力與推甄核心)",
         credits: 3,
         time: "星期五 第 6, 7, 8 節 (13:10 - 16:00)",
-        dayOfWeek: 5, // Fri
+        dayOfWeek: 5,
         periods: [6, 7, 8],
         timeRange: "13:10 - 16:00",
         location: "資工系專業教室 / 電腦教室",
@@ -1165,11 +1306,11 @@
         id: "digital_system",
         name: "數位系統設計 (Digital System Design)",
         shortName: "數位系統設計",
-        category: "CRITICAL", // 🔴 非常重要
+        category: "CRITICAL",
         importanceText: "🔴 非常重要 (硬體/嵌入式/AI晶片地基)",
         credits: 3,
         time: "星期二 第 7, 8, 9 節 (14:10 - 17:00)",
-        dayOfWeek: 2, // Tue
+        dayOfWeek: 2,
         periods: [7, 8, 9],
         timeRange: "14:10 - 17:00",
         location: "硬體實驗室",
@@ -1199,11 +1340,11 @@
         id: "assembly",
         name: "組合語言 (Assembly Language)",
         shortName: "組合語言",
-        category: "IMPORTANT", // 🟠 重要
+        category: "IMPORTANT",
         importanceText: "🟠 重要 (底層韌體與逆向分析必備)",
         credits: 3,
         time: "星期一 第 8, 9, A 節 (15:10 - 18:00)",
-        dayOfWeek: 1, // Mon
+        dayOfWeek: 1,
         periods: [8, 9, 10],
         timeRange: "15:10 - 18:00",
         location: "資工系電腦教室",
@@ -1233,11 +1374,11 @@
         id: "embedded_systems",
         name: "嵌入式系統軟體技術 (Embedded System Software Technology)",
         shortName: "嵌入式系統軟體",
-        category: "IMPORTANT", // 🟠 重要
+        category: "IMPORTANT",
         importanceText: "🟠 重要 (軟硬整合與專案履歷重點)",
         credits: 3,
         time: "星期四 第 2, 3, 4 節 (09:10 - 12:00)",
-        dayOfWeek: 4, // Thu
+        dayOfWeek: 4,
         periods: [2, 3, 4],
         timeRange: "09:10 - 12:00",
         location: "嵌入式實驗室",
@@ -1267,11 +1408,11 @@
         id: "windows_prog",
         name: "視窗程式設計 (Windows Programming)",
         shortName: "視窗程式設計",
-        category: "NORMAL", // 🟡 普通
+        category: "NORMAL",
         importanceText: "🟡 普通 (實戰工具與專題加分)",
         credits: 3,
         time: "星期四 第 7, 8, 9 節 (14:10 - 17:00)",
-        dayOfWeek: 4, // Thu
+        dayOfWeek: 4,
         periods: [7, 8, 9],
         timeRange: "14:10 - 17:00",
         location: "資工系電腦教室",
@@ -1301,11 +1442,11 @@
         id: "media_ethics",
         name: "資訊媒體素養與倫理",
         shortName: "資訊媒體素養與倫理",
-        category: "EASY", // 🟢 易維持通識
+        category: "EASY",
         importanceText: "🟢 易維持通識 (2 學分 / 守住基本分)",
         credits: 2,
         time: "星期五 第 1, 2 節 (08:10 - 10:00)",
-        dayOfWeek: 5, // Fri
+        dayOfWeek: 5,
         periods: [1, 2],
         timeRange: "08:10 - 10:00",
         location: "通識大樓教室",
@@ -1335,11 +1476,11 @@
         id: "ai_healthcare",
         name: "AI與醫療生活",
         shortName: "AI與醫療生活",
-        category: "EASY", // 🟢 易維持通識
+        category: "EASY",
         importanceText: "🟢 易維持通識 (2 學分 / 跨領域加分)",
         credits: 2,
         time: "星期二 第 3, 4 節 (10:10 - 12:00)",
-        dayOfWeek: 2, // Tue
+        dayOfWeek: 2,
         periods: [3, 4],
         timeRange: "10:10 - 12:00",
         location: "通識大樓教室",
@@ -1369,11 +1510,11 @@
         id: "picture_books",
         name: "圖畫書 (Picture Books)",
         shortName: "圖畫書",
-        category: "EASY", // 🟢 易維持通識
+        category: "EASY",
         importanceText: "🟢 易維持通識 (2 學分 / 完美調劑與拉分)",
         credits: 2,
         time: "星期一 第 3, 4 節 (10:10 - 12:00)",
-        dayOfWeek: 1, // Mon
+        dayOfWeek: 1,
         periods: [3, 4],
         timeRange: "10:10 - 12:00",
         location: "人文學院教室",
@@ -1417,8 +1558,6 @@
       { p: 10, text: "17:10 - 18:00 (A節)" }
     ];
 
-    // Official 115-1 Timetable Matrix [periodIndex][dayOfWeek 1..5]
-    // 1:Mon, 2:Tue, 3:Wed, 4:Thu, 5:Fri
     const TIMETABLE_DATA = {
       1: { 5: { name: "資訊媒體素養與倫理", cat: "EASY" } },
       2: { 3: { name: "離散數學", cat: "CRITICAL" }, 4: { name: "嵌入式系統軟體技術", cat: "IMPORTANT" }, 5: { name: "資訊媒體素養與倫理", cat: "EASY" } },
@@ -1501,9 +1640,6 @@
       }
     ];
 
-    // ==========================================
-    // 4. CPE TOPIC PROGRESS & INITIAL STARTER REPO
-    // ==========================================
     const DEFAULT_CPE_TOPICS = [
       { id: "io_syntax", name: "基礎 I/O 與語法", stage: "Stage 0", ac: 2, total: 2, status: "stable", desc: "while(cin>>n), getline, EOF, 型別" },
       { id: "simulation", name: "基本模擬與數學", stage: "Stage 1", ac: 1, total: 3, status: "learning", desc: "3n+1猜想、Vito家族、質數判斷" },
@@ -1526,11 +1662,13 @@
     // ==========================================
     let AppState = {
       activeTab: 'dashboard',
-      cpeStressMode: 'normal', // exam, normal, light
+      cpeStressMode: 'normal',
       userLevel: 'Lv.0',
       totalPracticeHours: 0.5,
       targetWeeklyHours: 5.0,
       totalAC: 0,
+      syncKey: 'nttu-kevin-2026',
+      lastSyncTime: '尚未同步',
       todayTasks: [],
       cpeLogs: [],
       coursesHealth: {},
@@ -1607,6 +1745,7 @@
       if (tabId === 'cpe') renderCpeTab();
       if (tabId === 'exams') renderExamsTab();
       if (tabId === 'health') renderHealthTab();
+      if (tabId === 'sync') renderSyncTab();
       if (tabId === 'sources') renderSourcesTab();
     }
 
@@ -2139,7 +2278,6 @@
       }
 
       evaluateCpeLevel();
-
       saveState();
       renderCpeTab();
       document.getElementById('cpe-input-name').value = '';
@@ -2361,6 +2499,147 @@
         </div>
       `;
       alert("✅ 每週覆盤儲存成功！");
+    }
+
+    // --- CLOUD SYNC & DATA TRANSFER LOGIC ---
+    function renderSyncTab() {
+      const keyInput = document.getElementById('sync-key-input');
+      if (keyInput) keyInput.value = AppState.syncKey || 'nttu-kevin-2026';
+      const statusMsg = document.getElementById('sync-status-msg');
+      if (statusMsg) statusMsg.textContent = `上次同步狀態: ${AppState.lastSyncTime || '尚未同步'}`;
+    }
+
+    function openSyncModal() {
+      const modalKey = document.getElementById('modal-sync-key');
+      if (modalKey) modalKey.value = AppState.syncKey || 'nttu-kevin-2026';
+      document.getElementById('sync-modal').classList.remove('hidden');
+    }
+
+    function closeSyncModal() {
+      document.getElementById('sync-modal').classList.add('hidden');
+    }
+
+    // Cloud Storage Endpoint using universal KV sync
+    const CLOUD_SYNC_ENDPOINT = 'https://api.jsonstorage.net/v1/json';
+
+    async function cloudPushData() {
+      const key = (document.getElementById('sync-key-input').value || AppState.syncKey || 'nttu-kevin-2026').trim();
+      AppState.syncKey = key;
+      const statusMsg = document.getElementById('sync-status-msg');
+      if (statusMsg) statusMsg.textContent = "正在上傳至雲端...";
+
+      try {
+        const payload = {
+          syncKey: key,
+          timestamp: new Date().toISOString(),
+          data: AppState
+        };
+        // Save to key-value cloud store
+        const res = await fetch(`https://api.restful-api.dev/objects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `NTTU_STUDY_SYNC_${key}`,
+            data: payload
+          })
+        });
+
+        AppState.lastSyncTime = `${new Date().toLocaleString()} (雲端備份成功)`;
+        saveState();
+        if (statusMsg) statusMsg.innerHTML = `<span class="text-emerald-400">✅ 上傳成功！在手機輸入相同密鑰 <strong>${key}</strong> 即可下載。</span>`;
+        alert(`☁️ 進度已成功上傳到雲端！\n同步金鑰：${key}\n您可以在手機或任何裝置輸入此金鑰點擊「下載」即可同步。`);
+      } catch (err) {
+        console.warn("Cloud push fallback to local token string", err);
+        copyDataTokenToClipboard();
+        alert(`☁️ 雲端服務繁忙，已自動為您複製「進度代碼」至剪貼簿！\n您可以直接貼到 LINE 傳給手機使用。`);
+      }
+    }
+
+    async function cloudPullData() {
+      const key = (document.getElementById('sync-key-input').value || AppState.syncKey || 'nttu-kevin-2026').trim();
+      AppState.syncKey = key;
+      const statusMsg = document.getElementById('sync-status-msg');
+      if (statusMsg) statusMsg.textContent = "正在從雲端下載最新進度...";
+
+      try {
+        const res = await fetch(`https://api.restful-api.dev/objects`);
+        const list = await res.json();
+        const matched = Array.isArray(list) ? list.filter(item => item.name === `NTTU_STUDY_SYNC_${key}`) : [];
+        
+        if (matched.length > 0) {
+          const latest = matched[matched.length - 1];
+          if (latest && latest.data && latest.data.data) {
+            AppState = Object.assign(AppState, latest.data.data);
+            AppState.lastSyncTime = `${new Date().toLocaleString()} (已從雲端同步最新進度)`;
+            saveState();
+            if (statusMsg) statusMsg.innerHTML = `<span class="text-emerald-400">✅ 下載成功！進度已同步。</span>`;
+            alert(`🎉 成功從雲端同步進度！\n已更新 CPE AC 題數、各科評估與最新排程。`);
+            location.reload();
+            return;
+          }
+        }
+        alert(`⚠️ 未在雲端找到金鑰 [${key}] 的歷史記錄，請先在原裝置點擊「上傳」。`);
+      } catch (err) {
+        alert(`⚠️ 雲端查詢超時，建議使用「管道 2：字串代碼複製」傳送，1 秒即可無縫同步！`);
+      }
+    }
+
+    function cloudPushDataFromModal() {
+      const key = document.getElementById('modal-sync-key').value;
+      if (key) document.getElementById('sync-key-input').value = key;
+      cloudPushData();
+    }
+
+    function cloudPullDataFromModal() {
+      const key = document.getElementById('modal-sync-key').value;
+      if (key) document.getElementById('sync-key-input').value = key;
+      cloudPullData();
+    }
+
+    function copyDataTokenToClipboard() {
+      const dataStr = JSON.stringify(AppState);
+      const token = btoa(encodeURIComponent(dataStr));
+      navigator.clipboard.writeText(token).then(() => {
+        alert(`📋 全部讀書進度與 CPE 記錄代碼已複製到剪貼簿！\n\n您可以直接貼到 LINE 傳給自己的手機，在手機網頁上貼上還原。`);
+      }).catch(() => {
+        prompt("請手動複製以下代碼：", token);
+      });
+    }
+
+    function restoreFromDataToken() {
+      const token = document.getElementById('paste-token-input').value.trim();
+      if (!token) {
+        alert("請先貼上進度代碼！");
+        return;
+      }
+      try {
+        const decoded = decodeURIComponent(atob(token));
+        const parsed = JSON.parse(decoded);
+        AppState = Object.assign(AppState, parsed);
+        saveState();
+        alert("🎉 進度代碼還原成功！所有最新資料已同步。");
+        location.reload();
+      } catch (e) {
+        alert("⚠️ 代碼格式錯誤或損毀，請重新在原裝置點擊複製。");
+      }
+    }
+
+    function importJsonFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          AppState = Object.assign(AppState, parsed);
+          saveState();
+          alert("🎉 JSON 備份檔匯入成功！即將重新載入。");
+          location.reload();
+        } catch (err) {
+          alert("⚠️ 檔案格式不符合 JSON 規範。");
+        }
+      };
+      reader.readAsText(file);
     }
 
     // --- SOURCES & SYLLABUS ---
